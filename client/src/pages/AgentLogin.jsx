@@ -67,9 +67,29 @@ export default function AgentLogin() {
         <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: 'var(--space-1)', color: 'var(--color-text-primary)' }}>
           Support Console
         </h1>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: 'var(--space-6)' }}>
-          Sign in to your agent console
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: 'var(--space-4)' }}>
+          Sign in to your agent or admin console
         </p>
+
+        <div style={{
+          padding: '18px 16px',
+          borderRadius: '20px',
+          background: 'rgba(59, 130, 246, 0.08)',
+          border: '1px solid rgba(59, 130, 246, 0.18)',
+          marginBottom: 'var(--space-6)'
+        }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '10px', color: '#0f172a' }}>
+            Admin portal login
+          </div>
+          <div style={{ display: 'grid', gap: '8px', fontSize: '13px', color: 'var(--color-text-primary)' }}>
+            <div>
+              <strong>Admin:</strong> admin@example.com / admin123
+            </div>
+            <div>
+              <strong>Agent:</strong> agent@example.com / agent123
+            </div>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 'var(--space-4)' }}>
