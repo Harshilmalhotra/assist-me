@@ -41,7 +41,7 @@ services:
       - CLIENT_URL=http://localhost
     ports:
       - "3001:3001"
-      - "40000-40100:40000-40100/udp"
+      - "40000-40010:40000-40010/udp"
     volumes:
       - uploads:/app/uploads
       - recordings:/app/recordings
