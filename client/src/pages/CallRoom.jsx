@@ -513,18 +513,38 @@ export default function CallRoom() {
   }
 
   async function handleStartRecording() {
-    const socket = getSocket();
-    const result = await emitWithAck(socket, 'start-recording', { sessionId });
-    if (result.success) {
+    try {
+      console.log('[Recording] Attempting to start recording...');
+      const socket = getSocket();
+      const result = await emitWithAck(socket, 'start-recording', { sessionId });
+      if (result.error) {
+        console.error('[Recording] Server returned error:', result.error);
+        alert(`Failed to start recording: ${result.error}`);
+        return;
+      }
+      console.log('[Recording] Started successfully:', result);
       setIsRecording(true);
       setRecordingId(result.recordingId);
+    } catch (err) {
+      console.error('[Recording] Exception starting recording:', err);
     }
   }
 
   async function handleStopRecording() {
-    const socket = getSocket();
-    await emitWithAck(socket, 'stop-recording', { sessionId, recordingId });
-    setIsRecording(false);
+    try {
+      console.log('[Recording] Attempting to stop recording...', recordingId);
+      const socket = getSocket();
+      const result = await emitWithAck(socket, 'stop-recording', { sessionId, recordingId });
+      if (result && result.error) {
+        console.error('[Recording] Server returned error stopping:', result.error);
+      } else {
+        console.log('[Recording] Stopped successfully');
+      }
+      setIsRecording(false);
+    } catch (err) {
+      console.error('[Recording] Exception stopping recording:', err);
+      setIsRecording(false);
+    }
   }
 
   if (status === 'connecting') {
@@ -751,7 +771,7 @@ export default function CallRoom() {
           }}>
             <div style={{
               width: '8px', height: '8px', borderRadius: '50%',
-              background: 'var(--color-recording)',
+              background: '#ef4444',
               animation: 'pulse 1.5s ease-in-out infinite',
             }} />
             RECORDING ON

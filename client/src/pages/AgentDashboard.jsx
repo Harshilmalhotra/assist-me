@@ -135,6 +135,28 @@ export default function AgentDashboard() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 'var(--space-2)' : 'var(--space-4)' }}>
+          <button
+            onClick={() => setSelectedSessionId(null)}
+            className="btn-interactive"
+            style={{
+              padding: isMobile ? '6px 10px' : '8px 16px',
+              background: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '20px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
+            }}
+            title="New Session"
+          >
+            <Plus size={14} /> {!isMobile && 'New Session'}
+          </button>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface-raised)', padding: isMobile ? '6px' : '6px 12px', borderRadius: '20px' }}>
             <User size={14} style={{ color: 'var(--color-text-secondary)' }} />
             {!isMobile && (
