@@ -462,6 +462,21 @@ export default function CallRoom() {
     navigate('/');
   }
 
+  async function handleStartRecording() {
+    const socket = getSocket();
+    const result = await emitWithAck(socket, 'start-recording', { sessionId });
+    if (result.success) {
+      setIsRecording(true);
+      setRecordingId(result.recordingId);
+    }
+  }
+
+  async function handleStopRecording() {
+    const socket = getSocket();
+    await emitWithAck(socket, 'stop-recording', { sessionId, recordingId });
+    setIsRecording(false);
+  }
+
   if (status === 'connecting') {
     return (
       <div style={loadingStyle}>
