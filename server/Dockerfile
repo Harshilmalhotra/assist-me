@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
 # Build tools for mediasoup native compilation and FFmpeg for recording
-RUN apk add --no-cache python3 py3-pip make g++ ffmpeg
+RUN apk add --no-cache python3 py3-pip make g++ ffmpeg linux-headers
 
 WORKDIR /app
 COPY package*.json ./
