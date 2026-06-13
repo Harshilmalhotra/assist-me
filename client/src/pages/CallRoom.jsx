@@ -46,6 +46,7 @@ export default function CallRoom() {
 
   const [audioMuted, setAudioMuted] = useState(isAgent ? false : !preJoinMic);
   const [videoOff, setVideoOff] = useState(isAgent ? false : !preJoinVideo);
+  const [remoteVideoOff, setRemoteVideoOff] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingId, setRecordingId] = useState(null);
   const [annotationActive, setAnnotationActive] = useState(false);
@@ -68,13 +69,19 @@ export default function CallRoom() {
 
   // Track window resizing
   useEffect(() => {
+    let wasMobile = window.innerWidth <= 768;
     const handleResize = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
-      if (mobile) {
-        setShowChat(false); // Close side chat panel on small screens by default
-      } else {
-        setShowChat(true); // Always show side panel on larger screens
+      
+      // Only auto-toggle chat when transitioning between desktop and mobile views
+      if (mobile !== wasMobile) {
+        if (mobile) {
+          setShowChat(false); // Close side chat panel on small screens by default when entering mobile view
+        } else {
+          setShowChat(true); // Always show side panel on larger screens when entering desktop view
+        }
+        wasMobile = mobile;
       }
     };
     window.addEventListener('resize', handleResize);
@@ -193,15 +200,22 @@ export default function CallRoom() {
           }
         }
 
-        // 9. Consume existing producers
+        // 9. Consume existing producers (excluding our own local producers)
         const existingProducers = await emitWithAck(socket, 'get-producers', { sessionId });
-        for (const { producerId, kind, appData } of existingProducers.producers) {
-          await consumeTrack(socket, producerId, kind, appData);
+        for (const { producerId, kind, appData, paused } of existingProducers.producers) {
+          if (
+            producerId === producersRef.current.audio?.id ||
+            producerId === producersRef.current.video?.id ||
+            producerId === screenProducerRef.current?.id
+          ) {
+            continue;
+          }
+          await consumeTrack(socket, producerId, kind, appData, paused);
         }
 
         // 10. Listen for new producers
         socket.on('new-producer', async ({ producerId, kind, appData }) => {
-          await consumeTrack(socket, producerId, kind, appData);
+          await consumeTrack(socket, producerId, kind, appData, false);
         });
 
         // 11. Listen for consumer closed events from server
@@ -217,11 +231,27 @@ export default function CallRoom() {
             } else {
               if (kind === 'video') {
                 setRemoteStream(null);
+                setRemoteVideoOff(false);
               } else if (kind === 'audio') {
                 const el = document.getElementById(`audio-${consumerId}`);
                 if (el) el.remove();
               }
             }
+          }
+        });
+
+        // 11b. Listen for producer pause/resume events
+        socket.on('producer-paused', ({ producerId }) => {
+          const entry = Array.from(consumersRef.current.values()).find(c => c.producerId === producerId);
+          if (entry && entry.kind === 'video' && (!entry.appData || !entry.appData.share)) {
+            setRemoteVideoOff(true);
+          }
+        });
+
+        socket.on('producer-resumed', ({ producerId }) => {
+          const entry = Array.from(consumersRef.current.values()).find(c => c.producerId === producerId);
+          if (entry && entry.kind === 'video' && (!entry.appData || !entry.appData.share)) {
+            setRemoteVideoOff(false);
           }
         });
 
@@ -234,11 +264,16 @@ export default function CallRoom() {
           setRemoteParticipant(null);
           setRemoteStream(null);
           setRemoteScreenStream(null);
+          setRemoteVideoOff(false);
         });
 
         // 13. Chat
         socket.on('new-message', (message) => {
           setMessages(prev => [...prev, message]);
+          const isMe = message.sender_name === myName || message.sender_role === role;
+          if (!isMe) {
+            playChime('chat');
+          }
           if (!showChat) {
             setUnreadChatCount(prev => prev + 1);
           }
@@ -248,9 +283,11 @@ export default function CallRoom() {
         socket.on('recording-started', ({ recordingId: rId }) => {
           setIsRecording(true);
           setRecordingId(rId);
+          playChime('recording-start');
         });
         socket.on('recording-stopped', () => {
           setIsRecording(false);
+          playChime('recording-stop');
         });
 
         // 15. Session end
@@ -259,11 +296,9 @@ export default function CallRoom() {
           setStatus('ended');
         });
 
-        // Load existing chat messages (Agents only)
-        if (isAgent) {
-          const { data } = await api.get(`/chat/${sessionId}`);
-          setMessages(data.messages);
-        }
+        // Load existing chat messages
+        const { data } = await api.get(`/chat/${sessionId}`);
+        setMessages(data.messages);
 
         setStatus('active');
       } catch (err) {
@@ -272,7 +307,7 @@ export default function CallRoom() {
       }
     }
 
-    async function consumeTrack(socket, producerId, kind, appData) {
+    async function consumeTrack(socket, producerId, kind, appData, initialPaused = false) {
       const device = deviceRef.current;
       const recvTransport = recvTransportRef.current;
       if (!device || !recvTransport) return;
@@ -304,6 +339,9 @@ export default function CallRoom() {
           if (kind === 'video') {
             const stream = new MediaStream([consumer.track]);
             setRemoteStream(stream);
+            if (initialPaused) {
+              setRemoteVideoOff(true);
+            }
           } else if (kind === 'audio') {
             const audioEl = document.createElement('audio');
             audioEl.id = `audio-${consumer.id}`;
@@ -341,6 +379,7 @@ export default function CallRoom() {
       consumersRef.current.clear();
 
       socket?.disconnect();
+      setRemoteVideoOff(false);
     };
   }, [sessionId]);
 
@@ -405,6 +444,10 @@ export default function CallRoom() {
   }
 
   async function handleStartScreenShare() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      alert('Screen sharing is not supported on this mobile device/browser. (Mobile WebRTC screen broadcasting typically requires a desktop browser or a native app wrapper.)');
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: { cursor: 'always' },
@@ -427,6 +470,7 @@ export default function CallRoom() {
       setIsScreenSharing(true);
     } catch (err) {
       console.error('Failed to share screen:', err);
+      alert(`Could not start screen sharing: ${err.message || err}`);
     }
   }
 
@@ -515,7 +559,7 @@ export default function CallRoom() {
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#0a0a0a', overflow: 'hidden', position: 'relative' }}>
       {/* Video area */}
-      <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
         
         {/* Main Video Box */}
         <div style={{ flex: 1, position: 'relative', background: '#0f0f10' }}>
@@ -527,6 +571,7 @@ export default function CallRoom() {
               isMuted={true}
               isLocal={!!localScreenStream}
               isCameraOff={false}
+              fit="contain"
             />
           ) : (
             // Remote participant webcam is main focus
@@ -535,7 +580,8 @@ export default function CallRoom() {
               label={remoteParticipant ? `${remoteParticipant.name} (${remoteParticipant.role})` : 'Waiting for participant…'}
               isMuted={false}
               isLocal={false}
-              isCameraOff={false}
+              isCameraOff={remoteVideoOff}
+              fit="cover"
             >
               {/* Annotation canvas overlay */}
               <AnnotationCanvas
@@ -591,7 +637,7 @@ export default function CallRoom() {
                   label={remoteParticipant ? remoteParticipant.name : 'Customer'}
                   isMuted={false}
                   isLocal={false}
-                  isCameraOff={false}
+                  isCameraOff={remoteVideoOff}
                 />
               </div>
             )}
@@ -675,6 +721,7 @@ export default function CallRoom() {
             showScreenShare={true}
             chatOpen={showChat}
             unreadChatCount={unreadChatCount}
+            isMobile={isMobile}
             onToggleMute={toggleMute}
             onToggleVideo={toggleVideo}
             onToggleRecording={isRecording ? handleStopRecording : handleStartRecording}
@@ -761,3 +808,70 @@ const loadingStyle = {
   height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
   color: '#ffffff', background: '#0a0a0a', fontSize: '14px',
 };
+
+function playChime(type) {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    if (type === 'chat') {
+      // High-pitched pleasant ping chime
+      const playPing = (freq, startTime, duration) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        gain.gain.setValueAtTime(0.15, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.005, startTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+      playPing(880, ctx.currentTime, 0.12); // A5
+      playPing(1046.50, ctx.currentTime + 0.08, 0.2); // C6
+    } else if (type === 'recording-start') {
+      // Ascending three-note chime
+      const playNote = (freq, startTime, duration) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        gain.gain.setValueAtTime(0.15, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.005, startTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+      playNote(523.25, ctx.currentTime, 0.12); // C5
+      playNote(659.25, ctx.currentTime + 0.08, 0.12); // E5
+      playNote(783.99, ctx.currentTime + 0.16, 0.25); // G5
+    } else if (type === 'recording-stop') {
+      // Descending two-note chime
+      const playNote = (freq, startTime, duration) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        gain.gain.setValueAtTime(0.15, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.005, startTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+      playNote(783.99, ctx.currentTime, 0.12); // G5
+      playNote(659.25, ctx.currentTime + 0.08, 0.25); // E5
+    }
+  } catch (e) {
+    console.warn('Audio playback failed', e);
+  }
+}

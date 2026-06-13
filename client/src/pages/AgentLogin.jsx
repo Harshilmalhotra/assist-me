@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 
@@ -8,6 +8,14 @@ export default function AgentLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Track viewport width for responsiveness
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -39,7 +47,7 @@ export default function AgentLogin() {
         style={{
           width: '100%',
           maxWidth: '380px',
-          padding: 'var(--space-8) var(--space-10)',
+          padding: isMobile ? 'var(--space-6) var(--space-5)' : 'var(--space-8) var(--space-10)',
           borderRadius: 'var(--radius-xl)',
           color: 'var(--color-text-primary)',
           boxShadow: '0 10px 30px rgba(0,0,0,0.08)',

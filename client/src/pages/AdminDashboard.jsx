@@ -8,6 +8,14 @@ export default function AdminDashboard() {
   const [liveSessions, setLiveSessions] = useState([]);
   const [history, setHistory] = useState([]);
 
+  // Track viewport width for responsiveness
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   async function loadData() {
     try {
       const [statsRes, liveRes, historyRes] = await Promise.all([
@@ -60,7 +68,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <header style={{
         background: 'var(--color-background)', borderBottom: '1px solid var(--color-border)',
-        padding: '0 var(--space-8)', height: '52px',
+        padding: isMobile ? '0 var(--space-4)' : '0 var(--space-8)', height: '52px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <span style={{ fontWeight: 600 }}>Admin — Support Console</span>
@@ -72,9 +80,9 @@ export default function AdminDashboard() {
         </button>
       </header>
 
-      <main style={{ padding: 'var(--space-8)', maxWidth: '1200px', margin: '0 auto' }}>
+      <main style={{ padding: isMobile ? 'var(--space-4)' : 'var(--space-8)', maxWidth: '1200px', margin: '0 auto' }}>
         {/* Stats row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
           {statItems.map(item => (
             <div key={item.label} style={{
               background: 'var(--color-background)',
@@ -103,40 +111,42 @@ export default function AdminDashboard() {
                 No active sessions
               </div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    {['Customer', 'Agent', 'Duration', 'Started', ''].map(h => (
-                      <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {liveSessions.map(session => (
-                    <tr key={session.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                      <td style={tdStyle}>{session.customer_name}</td>
-                      <td style={tdStyle}>{session.agent_name}</td>
-                      <td style={tdStyle}>{formatDuration(session.duration_seconds)}</td>
-                      <td style={tdStyle}>{new Date(session.started_at).toLocaleTimeString()}</td>
-                      <td style={tdStyle}>
-                        <button
-                          onClick={() => forceEnd(session.id)}
-                          style={{
-                            padding: '4px 10px', fontSize: '12px', cursor: 'pointer',
-                            background: 'var(--color-danger-bg)', color: 'var(--color-danger)',
-                            border: '1px solid var(--color-danger)',
-                            borderRadius: 'var(--radius-md)',
-                          }}
-                        >
-                          Force end
-                        </button>
-                      </td>
+              <div style={{ overflowX: 'auto', width: '100%' }}>
+                <table style={{ width: '100%', minWidth: isMobile ? '600px' : 'auto', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      {['Customer', 'Agent', 'Duration', 'Started', ''].map(h => (
+                        <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+                          {h}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {liveSessions.map(session => (
+                      <tr key={session.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <td style={tdStyle}>{session.customer_name}</td>
+                        <td style={tdStyle}>{session.agent_name}</td>
+                        <td style={tdStyle}>{formatDuration(session.duration_seconds)}</td>
+                        <td style={tdStyle}>{new Date(session.started_at).toLocaleTimeString()}</td>
+                        <td style={tdStyle}>
+                          <button
+                            onClick={() => forceEnd(session.id)}
+                            style={{
+                              padding: '4px 10px', fontSize: '12px', cursor: 'pointer',
+                              background: 'var(--color-danger-bg)', color: 'var(--color-danger)',
+                              border: '1px solid var(--color-danger)',
+                              borderRadius: 'var(--radius-md)',
+                            }}
+                          >
+                            Force end
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </section>
@@ -147,37 +157,39 @@ export default function AdminDashboard() {
             Session history
           </h2>
           <div style={{ background: 'var(--color-background)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                  {['Customer', 'Agent', 'Duration', 'CSAT', 'Status', 'Date'].map(h => (
-                    <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {history.map(session => (
-                  <tr key={session.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    <td style={tdStyle}>{session.customer_name}</td>
-                    <td style={tdStyle}>{session.agent_name}</td>
-                    <td style={tdStyle}>{formatDuration(session.duration_seconds)}</td>
-                    <td style={tdStyle}>{session.predicted_csat ? `${session.predicted_csat}/5` : '—'}</td>
-                    <td style={tdStyle}>
-                      <span style={{
-                        fontSize: '12px', padding: '2px 8px', borderRadius: '12px',
-                        background: session.resolution_status === 'resolved' ? 'var(--color-success-bg)' : 'var(--color-surface-raised)',
-                        color: session.resolution_status === 'resolved' ? 'var(--color-success)' : 'var(--color-text-secondary)',
-                      }}>
-                        {session.resolution_status || '—'}
-                      </span>
-                    </td>
-                    <td style={tdStyle}>{new Date(session.created_at).toLocaleDateString()}</td>
+            <div style={{ overflowX: 'auto', width: '100%' }}>
+              <table style={{ width: '100%', minWidth: isMobile ? '600px' : 'auto', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    {['Customer', 'Agent', 'Duration', 'CSAT', 'Status', 'Date'].map(h => (
+                      <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {history.map(session => (
+                    <tr key={session.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <td style={tdStyle}>{session.customer_name}</td>
+                      <td style={tdStyle}>{session.agent_name}</td>
+                      <td style={tdStyle}>{formatDuration(session.duration_seconds)}</td>
+                      <td style={tdStyle}>{session.predicted_csat ? `${session.predicted_csat}/5` : '—'}</td>
+                      <td style={tdStyle}>
+                        <span style={{
+                          fontSize: '12px', padding: '2px 8px', borderRadius: '12px',
+                          background: session.resolution_status === 'resolved' ? 'var(--color-success-bg)' : 'var(--color-surface-raised)',
+                          color: session.resolution_status === 'resolved' ? 'var(--color-success)' : 'var(--color-text-secondary)',
+                        }}>
+                          {session.resolution_status || '—'}
+                        </span>
+                      </td>
+                      <td style={tdStyle}>{new Date(session.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       </main>

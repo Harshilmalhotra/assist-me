@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS session_events (
 CREATE TABLE IF NOT EXISTS chat_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
-  sender_role TEXT NOT NULL CHECK (sender_role IN ('agent', 'customer')),
+  sender_role TEXT NOT NULL CHECK (sender_role IN ('agent', 'customer', 'admin')),
   sender_name TEXT NOT NULL,
   message_type TEXT NOT NULL DEFAULT 'text' CHECK (message_type IN ('text', 'file')),
   content TEXT NOT NULL,

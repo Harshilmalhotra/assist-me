@@ -117,7 +117,24 @@ async function sendTelegramInvite({ customerTelegram, customerName, agentName, j
 }
 
 async function sendSMSInvite({ customerPhone, customerName, agentName, joinUrl }) {
-  const messageBody = `Hi ${customerName}, your support agent ${agentName} is waiting for you. Join the video call here: ${joinUrl}`;
+  let finalJoinUrl = joinUrl;
+
+  try {
+    const redis = require('../redis');
+    const crypto = require('crypto');
+    const code = crypto.randomBytes(3).toString('hex'); // 6 chars (e.g. 'a2b3c4')
+
+    // Store in Redis (expires in 30 minutes to match token expiry)
+    await redis.set(`short:${code}`, joinUrl, 'EX', 1800);
+
+    // Build the short URL using the origin of the dynamic joinUrl!
+    const urlObj = new URL(joinUrl);
+    finalJoinUrl = `${urlObj.origin}/api/s/${code}`;
+  } catch (err) {
+    console.error('URL shortening failed, falling back to full URL:', err.message);
+  }
+
+  const messageBody = `Hi ${customerName}, your support agent ${agentName} is waiting for you. Join the video call here: ${finalJoinUrl}`;
 
   if (twilioClient && config.twilio.fromNumber) {
     await twilioClient.messages.create({
@@ -125,7 +142,7 @@ async function sendSMSInvite({ customerPhone, customerName, agentName, joinUrl }
       from: config.twilio.fromNumber,
       to: customerPhone,
     });
-    console.log(`SMS invite sent via Twilio to ${customerPhone}`);
+    console.log(`SMS invite sent via Twilio to ${customerPhone} with shortened URL: ${finalJoinUrl}`);
   } else {
     console.log('\x1b[33m%s\x1b[0m', `[TWILIO MOCK] SMS message would be sent to ${customerPhone}:`);
     console.log(`  Content: ${messageBody}`);

@@ -180,7 +180,7 @@ module.exports = function handleMedia(io, socket) {
 
       const producers = [];
       data.producers.forEach((producer, id) => {
-        producers.push({ producerId: id, kind: producer.kind, appData: producer.appData });
+        producers.push({ producerId: id, kind: producer.kind, appData: producer.appData, paused: producer.paused });
       });
 
       callback({ producers });

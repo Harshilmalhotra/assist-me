@@ -10,6 +10,14 @@ export default function AgentDashboard() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Track viewport width for responsiveness
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Create session form state
   const [form, setForm] = useState({
     customerName: '',
@@ -83,7 +91,7 @@ export default function AgentDashboard() {
         borderBottom: '1px solid var(--color-border)',
         display: 'flex',
         alignItems: 'center',
-        padding: '0 var(--space-6)',
+        padding: isMobile ? '0 var(--space-3)' : '0 var(--space-6)',
         justifyContent: 'space-between',
         flexShrink: 0,
         boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
@@ -95,15 +103,17 @@ export default function AgentDashboard() {
             alignItems: 'center', justifyContent: 'center', color: '#fff',
             fontWeight: 'bold', fontSize: '16px'
           }}>S</div>
-          <span style={{ fontWeight: 700, fontSize: '15px', tracking: '-0.01em' }}>Support Console</span>
+          <span style={{ fontWeight: 700, fontSize: '15px', tracking: '-0.01em' }}>{!isMobile && 'Support Console'}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface-raised)', padding: '6px 12px', borderRadius: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 'var(--space-2)' : 'var(--space-4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface-raised)', padding: isMobile ? '6px' : '6px 12px', borderRadius: '20px' }}>
             <User size={14} style={{ color: 'var(--color-text-secondary)' }} />
-            <span style={{ color: 'var(--color-text-primary)', fontSize: '12.5px', fontWeight: 500 }}>
-              {agent.name}
-            </span>
+            {!isMobile && (
+              <span style={{ color: 'var(--color-text-primary)', fontSize: '12.5px', fontWeight: 500 }}>
+                {agent.name}
+              </span>
+            )}
           </div>
 
           {agent.role === 'admin' && (
@@ -111,14 +121,15 @@ export default function AgentDashboard() {
               onClick={() => navigate('/admin')}
               className="btn-interactive"
               style={{
-                padding: '6px 14px', background: 'none',
+                padding: isMobile ? '6px 8px' : '6px 14px', background: 'none',
                 border: '1px solid var(--color-border)',
                 borderRadius: '20px', fontSize: '12.5px', cursor: 'pointer',
                 color: 'var(--color-text-secondary)', fontWeight: 500,
                 display: 'flex', alignItems: 'center', gap: '6px'
               }}
+              title="Admin Panel"
             >
-              <Shield size={14} /> Admin
+              <Shield size={14} /> {!isMobile && 'Admin'}
             </button>
           )}
 
@@ -129,26 +140,29 @@ export default function AgentDashboard() {
             }}
             className="btn-interactive"
             style={{
-              padding: '6px 14px', background: 'none',
+              padding: isMobile ? '6px 8px' : '6px 14px', background: 'none',
               border: '1px solid var(--color-border)',
               borderRadius: '20px', fontSize: '12.5px', cursor: 'pointer',
               color: 'var(--color-danger)', fontWeight: 500,
               display: 'flex', alignItems: 'center', gap: '6px',
             }}
+            title="Sign Out"
           >
-            <LogOut size={14} /> Sign out
+            <LogOut size={14} /> {!isMobile && 'Sign out'}
           </button>
         </div>
       </header>
 
       {/* Main Container */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', flex: 1, overflow: isMobile ? 'auto' : 'hidden' }}>
         
         {/* Left Sidebar: Session List */}
         <aside style={{
-          width: '340px',
+          width: isMobile ? '100%' : '340px',
+          height: isMobile ? '240px' : 'auto',
           background: 'var(--color-surface)',
-          borderRight: '1px solid var(--color-border)',
+          borderRight: isMobile ? 'none' : '1px solid var(--color-border)',
+          borderBottom: isMobile ? '1px solid var(--color-border)' : 'none',
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
@@ -182,7 +196,7 @@ export default function AgentDashboard() {
             {sessions.map(session => (
               <div
                 key={session.id}
-                onClick={() => navigate(`/session/${session.id}`)}
+                onClick={() => window.open(`/session/${session.id}`, '_blank')}
                 className="btn-interactive animate-fade-in"
                 style={{
                   padding: '14px 16px',
@@ -238,7 +252,7 @@ export default function AgentDashboard() {
         {/* Right Dashboard Area */}
         <main 
           className="animate-fade-in"
-          style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-8) var(--space-10)' }}
+          style={{ flex: 1, overflowY: isMobile ? 'visible' : 'auto', padding: isMobile ? 'var(--space-4)' : 'var(--space-8) var(--space-10)' }}
         >
           <div style={{ maxWidth: '640px' }}>
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>
@@ -256,7 +270,7 @@ export default function AgentDashboard() {
               boxShadow: '0 4px 12px rgba(0,0,0,0.01)'
             }}>
               <form onSubmit={handleCreateSession}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
                   <div style={fieldStyle}>
                     <label style={labelStyle}>Customer Name *</label>
                     <input
@@ -282,7 +296,7 @@ export default function AgentDashboard() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
                   <div style={fieldStyle}>
                     <label style={labelStyle}>Telegram Username</label>
                     <input
@@ -362,7 +376,7 @@ export default function AgentDashboard() {
                 </div>
                 
                 <button
-                  onClick={() => navigate(`/session/${lastCreated.session.id}`)}
+                  onClick={() => window.open(`/session/${lastCreated.session.id}`, '_blank')}
                   className="btn-interactive"
                   style={{
                     display: 'flex', alignItems: 'center', gap: '6px',

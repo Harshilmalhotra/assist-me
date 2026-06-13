@@ -57,6 +57,21 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Short URL redirect endpoint
+app.get('/api/s/:shortCode', async (req, res) => {
+  try {
+    const redis = require('./redis');
+    const { shortCode } = req.params;
+    const targetUrl = await redis.get(`short:${shortCode}`);
+    if (!targetUrl) {
+      return res.status(404).send('Short URL expired or invalid');
+    }
+    res.redirect(targetUrl);
+  } catch (err) {
+    res.status(500).send('Internal server error');
+  }
+});
+
 // Fallback to React Router in SPA production mode
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'), (err) => {

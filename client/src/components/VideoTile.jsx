@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { VideoOff } from 'lucide-react';
 
-export default function VideoTile({ stream, label, isMuted, isLocal, isCameraOff, children }) {
+export default function VideoTile({ stream, label, isMuted, isLocal, isCameraOff, fit = 'cover', children }) {
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -21,14 +22,29 @@ export default function VideoTile({ stream, label, isMuted, isLocal, isCameraOff
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: '#222',
+          background: '#151516',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#666',
-          fontSize: '14px',
+          color: 'rgba(255, 255, 255, 0.4)',
+          gap: '12px',
+          zIndex: 4,
         }}>
-          Camera off
+          <div style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'rgba(255, 255, 255, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.08)'
+          }}>
+            <VideoOff size={24} />
+          </div>
+          <span style={{ fontSize: '13px', fontWeight: 500 }}>Camera is turned off</span>
         </div>
       ) : stream ? (
         <video
@@ -39,7 +55,8 @@ export default function VideoTile({ stream, label, isMuted, isLocal, isCameraOff
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
+            objectFit: fit,
+            transform: isLocal ? 'scaleX(-1)' : 'none',
           }}
         />
       ) : (

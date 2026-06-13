@@ -11,6 +11,7 @@ export default function CallControls({
   showScreenShare = true,
   chatOpen,
   unreadChatCount = 0,
+  isMobile = false,
   onToggleMute,
   onToggleVideo,
   onToggleRecording,
@@ -19,6 +20,8 @@ export default function CallControls({
   onToggleChat,
   onEndCall,
 }) {
+  const iconSize = isMobile ? 14 : 20;
+
   return (
     <div 
       className="glass-panel animate-fade-in"
@@ -29,8 +32,8 @@ export default function CallControls({
         transform: 'translateX(-50%)',
         display: 'flex',
         alignItems: 'center',
-        gap: '14px',
-        padding: '10px 22px',
+        gap: isMobile ? '6px' : '14px',
+        padding: isMobile ? '6px 10px' : '10px 22px',
         borderRadius: '40px',
         zIndex: 15,
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
@@ -40,20 +43,20 @@ export default function CallControls({
       <button
         onClick={onToggleMute}
         className="btn-interactive"
-        style={buttonStyle(audioMuted)}
+        style={buttonStyle(audioMuted, false, false, isMobile)}
         title={audioMuted ? 'Unmute Audio' : 'Mute Audio'}
       >
-        {audioMuted ? <MicOff size={20} color="#ef4444" /> : <Mic size={20} />}
+        {audioMuted ? <MicOff size={iconSize} color="#ef4444" /> : <Mic size={iconSize} />}
       </button>
 
       {/* Video toggle */}
       <button
         onClick={onToggleVideo}
         className="btn-interactive"
-        style={buttonStyle(videoOff)}
+        style={buttonStyle(videoOff, false, false, isMobile)}
         title={videoOff ? 'Start Camera' : 'Stop Camera'}
       >
-        {videoOff ? <VideoOff size={20} color="#ef4444" /> : <Video size={20} />}
+        {videoOff ? <VideoOff size={iconSize} color="#ef4444" /> : <Video size={iconSize} />}
       </button>
 
       {/* Screen Share toggle */}
@@ -61,10 +64,10 @@ export default function CallControls({
         <button
           onClick={onToggleScreenShare}
           className="btn-interactive"
-          style={buttonStyle(isScreenSharing, false, true)}
+          style={buttonStyle(isScreenSharing, false, true, isMobile)}
           title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
         >
-          <MonitorUp size={20} color={isScreenSharing ? '#3b82f6' : '#fff'} />
+          <MonitorUp size={iconSize} color={isScreenSharing ? '#3b82f6' : '#fff'} />
         </button>
       )}
 
@@ -73,12 +76,12 @@ export default function CallControls({
         onClick={onToggleChat}
         className="btn-interactive"
         style={{
-          ...buttonStyle(chatOpen),
+          ...buttonStyle(chatOpen, false, false, isMobile),
           position: 'relative',
         }}
         title={chatOpen ? 'Hide Chat' : 'Show Chat'}
       >
-        <MessageSquare size={20} color={chatOpen ? '#22c55e' : '#fff'} />
+        <MessageSquare size={iconSize} color={chatOpen ? '#22c55e' : '#fff'} />
         {unreadChatCount > 0 && (
           <span style={{
             position: 'absolute',
@@ -86,11 +89,11 @@ export default function CallControls({
             right: '-4px',
             background: 'var(--color-danger)',
             color: '#fff',
-            fontSize: '9.5px',
+            fontSize: isMobile ? '8px' : '9.5px',
             fontWeight: 'bold',
             borderRadius: '50%',
-            width: '17px',
-            height: '17px',
+            width: isMobile ? '13px' : '17px',
+            height: isMobile ? '13px' : '17px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -106,10 +109,10 @@ export default function CallControls({
         <button
           onClick={onToggleRecording}
           className="btn-interactive"
-          style={buttonStyle(isRecording, true)}
+          style={buttonStyle(isRecording, true, false, isMobile)}
           title={isRecording ? 'Stop Recording' : 'Start Recording'}
         >
-          <Circle size={20} fill={isRecording ? '#ef4444' : 'none'} color={isRecording ? '#ef4444' : '#fff'} />
+          <Circle size={iconSize} fill={isRecording ? '#ef4444' : 'none'} color={isRecording ? '#ef4444' : '#fff'} />
         </button>
       )}
 
@@ -118,10 +121,10 @@ export default function CallControls({
         <button
           onClick={onToggleAnnotation}
           className="btn-interactive"
-          style={buttonStyle(annotationActive)}
+          style={buttonStyle(annotationActive, false, false, isMobile)}
           title={annotationActive ? 'Disable Annotations' : 'Enable Annotations'}
         >
-          <PenTool size={20} color={annotationActive ? '#22c55e' : '#fff'} />
+          <PenTool size={iconSize} color={annotationActive ? '#22c55e' : '#fff'} />
         </button>
       )}
 
@@ -131,24 +134,24 @@ export default function CallControls({
       <button
         onClick={onEndCall}
         className="btn-interactive"
-        style={endButtonStyle}
+        style={endButtonStyle(isMobile)}
         title={showRecording ? 'End Call Session' : 'Exit Call'}
       >
-        <PhoneOff size={20} />
+        <PhoneOff size={iconSize} />
       </button>
     </div>
   );
 }
 
-const buttonStyle = (active, isRecord = false, isScreen = false) => ({
+const buttonStyle = (active, isRecord = false, isScreen = false, isMobile = false) => ({
   background: active
     ? (isRecord ? 'rgba(239, 68, 68, 0.25)' : (isScreen ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.15)'))
     : 'rgba(255, 255, 255, 0.07)',
   color: active ? (isRecord ? '#ef4444' : (isScreen ? '#3b82f6' : '#fff')) : '#ccc',
   border: '1px solid rgba(255, 255, 255, 0.1)',
   borderRadius: '50%',
-  width: '44px',
-  height: '44px',
+  width: isMobile ? '32px' : '44px',
+  height: isMobile ? '32px' : '44px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -156,17 +159,17 @@ const buttonStyle = (active, isRecord = false, isScreen = false) => ({
   outline: 'none',
 });
 
-const endButtonStyle = {
+const endButtonStyle = (isMobile = false) => ({
   background: '#dc2626',
   color: '#ffffff',
   border: 'none',
   borderRadius: '50%',
-  width: '44px',
-  height: '44px',
+  width: isMobile ? '32px' : '44px',
+  height: isMobile ? '32px' : '44px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   cursor: 'pointer',
   outline: 'none',
-};
+});
 
