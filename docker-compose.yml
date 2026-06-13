@@ -38,6 +38,7 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - REDIS_HOST=redis
+      - CLIENT_URL=http://localhost
     ports:
       - "3001:3001"
       - "40000-40100:40000-40100/udp"

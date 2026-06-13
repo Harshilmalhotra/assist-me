@@ -352,12 +352,10 @@ export default function CallRoom() {
             isCameraOff={false}
           >
             {/* Annotation canvas overlay */}
-            {isAgent && (
-              <AnnotationCanvas
-                active={annotationActive}
-                sessionId={sessionId}
-              />
-            )}
+            <AnnotationCanvas
+              active={annotationActive}
+              sessionId={sessionId}
+            />
             {!remoteParticipant && (
               <div style={{
                 position: 'absolute', inset: 0, display: 'flex',

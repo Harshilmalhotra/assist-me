@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   customer_name TEXT,
   customer_email TEXT,
   customer_telegram TEXT,
+  customer_phone TEXT,
   invite_token TEXT UNIQUE,
   status TEXT NOT NULL DEFAULT 'waiting'
     CHECK (status IN ('waiting', 'active', 'ended')),

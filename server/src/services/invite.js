@@ -22,6 +22,13 @@ if (config.telegram.token) {
   telegramBot = new TelegramBot(config.telegram.token, { polling: false });
 }
 
+// Twilio SMS initialization
+const twilio = require('twilio');
+let twilioClient = null;
+if (config.twilio.accountSid && config.twilio.authToken) {
+  twilioClient = twilio(config.twilio.accountSid, config.twilio.authToken);
+}
+
 async function sendEmailInvite({ customerEmail, customerName, agentName, joinUrl }) {
   const subject = `${agentName} is ready for your support call`;
 
@@ -108,13 +115,29 @@ async function sendTelegramInvite({ customerTelegram, customerName, agentName, j
   }
 }
 
-async function sendInvite({ session, joinUrl, customerEmail, customerTelegram, customerName }) {
-  const agentName = 'Support Agent'; // Fallback name
+async function sendSMSInvite({ customerPhone, customerName, agentName, joinUrl }) {
+  const messageBody = `Hi ${customerName}, your support agent ${agentName} is waiting for you. Join the video call here: ${joinUrl}`;
+
+  if (twilioClient && config.twilio.fromNumber) {
+    await twilioClient.messages.create({
+      body: messageBody,
+      from: config.twilio.fromNumber,
+      to: customerPhone,
+    });
+    console.log(`SMS invite sent via Twilio to ${customerPhone}`);
+  } else {
+    console.log('\x1b[33m%s\x1b[0m', `[TWILIO MOCK] SMS message would be sent to ${customerPhone}:`);
+    console.log(`  Content: ${messageBody}`);
+  }
+}
+
+async function sendInvite({ session, joinUrl, customerEmail, customerTelegram, customerPhone, customerName, agentName }) {
+  const finalAgentName = agentName || 'Support Agent';
   const errors = [];
 
   if (customerEmail) {
     try {
-      await sendEmailInvite({ customerEmail, customerName, agentName, joinUrl });
+      await sendEmailInvite({ customerEmail, customerName, agentName: finalAgentName, joinUrl });
     } catch (err) {
       errors.push(`Email failed: ${err.message}`);
       console.error('Email invite error:', err.message);
@@ -123,10 +146,19 @@ async function sendInvite({ session, joinUrl, customerEmail, customerTelegram, c
 
   if (customerTelegram) {
     try {
-      await sendTelegramInvite({ customerTelegram, customerName, agentName, joinUrl });
+      await sendTelegramInvite({ customerTelegram, customerName, agentName: finalAgentName, joinUrl });
     } catch (err) {
       errors.push(`Telegram failed: ${err.message}`);
       console.error('Telegram invite error:', err.message);
+    }
+  }
+
+  if (customerPhone) {
+    try {
+      await sendSMSInvite({ customerPhone, customerName, agentName: finalAgentName, joinUrl });
+    } catch (err) {
+      errors.push(`SMS failed: ${err.message}`);
+      console.error('SMS invite error:', err.message);
     }
   }
 

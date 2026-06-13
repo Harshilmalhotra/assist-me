@@ -14,6 +14,7 @@ export default function AgentDashboard() {
     customerName: '',
     customerEmail: '',
     customerTelegram: '',
+    customerPhone: '',
   });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -44,7 +45,7 @@ export default function AgentDashboard() {
     try {
       const { data } = await api.post('/sessions', form);
       setLastCreated(data);
-      setForm({ customerName: '', customerEmail: '', customerTelegram: '' });
+      setForm({ customerName: '', customerEmail: '', customerTelegram: '', customerPhone: '' });
       loadSessions();
     } catch (err) {
       setCreateError(err.response?.data?.error || 'Failed to create session');
@@ -204,6 +205,19 @@ export default function AgentDashboard() {
               />
               <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)', display: 'block' }}>
                 Customer must have messaged your bot at least once. Include or omit the @.
+              </span>
+            </div>
+
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Customer phone number</label>
+              <input
+                style={inputStyle}
+                value={form.customerPhone}
+                onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))}
+                placeholder="+1234567890"
+              />
+              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)', display: 'block' }}>
+                An invite link will be sent via Twilio SMS to this phone number
               </span>
             </div>
 

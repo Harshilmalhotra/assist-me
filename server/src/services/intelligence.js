@@ -1,16 +1,14 @@
-const OpenAI = require('openai');
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 const db = require('../db');
 const config = require('../config');
 
-// Initialize API clients only if keys are present
-const openai = config.openai.apiKey ? new OpenAI({ apiKey: config.openai.apiKey }) : null;
-const anthropic = config.anthropic.apiKey ? new Anthropic({ apiKey: config.anthropic.apiKey }) : null;
+// Initialize Gemini client only if key is present
+const genAI = config.gemini.apiKey ? new GoogleGenerativeAI(config.gemini.apiKey) : null;
 
 async function transcribeAudio(audioPath) {
-  if (!openai) {
-    console.log('\x1b[33m%s\x1b[0m', '[WHISPER MOCK] Skipping Whisper transcription (API Key missing). Returning mock transcript.');
+  if (!genAI) {
+    console.log('\x1b[33m%s\x1b[0m', '[GEMINI MOCK] Skipping Gemini audio transcription (API Key missing). Returning mock transcript.');
     return `[00:05] Customer: Hi, I've been trying to set up my home router but the WAN light is flashing red.
 [00:15] Agent: Hello! I can help you with that. Can you point your phone camera at the back of the router?
 [00:25] Customer: Sure, let me rotate the device. Here it is.
@@ -25,27 +23,23 @@ async function transcribeAudio(audioPath) {
     throw new Error(`Audio file not found: ${audioPath}`);
   }
 
-  const transcription = await openai.audio.transcriptions.create({
-    file: fs.createReadStream(audioPath),
-    model: 'whisper-1',
-    response_format: 'verbose_json',
-    timestamp_granularities: ['segment'],
-  });
+  const audioPart = {
+    inlineData: {
+      data: fs.readFileSync(audioPath).toString('base64'),
+      mimeType: 'video/mp4' // Using video/mp4 since ffmpeg saves it in mp4 format
+    }
+  };
 
-  const segments = transcription.segments || [];
-  const formatted = segments.map(seg => {
-    const minutes = Math.floor(seg.start / 60);
-    const seconds = Math.floor(seg.start % 60);
-    const timestamp = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    return `[${timestamp}] ${seg.text.trim()}`;
-  }).join('\n');
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const prompt = 'Please provide a transcript of this audio support call. Format the output with timestamp markers and specify if the speaker is the customer or the agent.';
 
-  return formatted || transcription.text;
+  const result = await model.generateContent([prompt, audioPart]);
+  return result.response.text();
 }
 
-async function analyzeWithClaude(transcript, chatMessages) {
-  if (!anthropic) {
-    console.log('\x1b[33m%s\x1b[0m', '[CLAUDE MOCK] Skipping Claude analysis (API Key missing). Returning mock JSON analysis.');
+async function analyzeWithGemini(transcript, chatMessages) {
+  if (!genAI) {
+    console.log('\x1b[33m%s\x1b[0m', '[GEMINI MOCK] Skipping Gemini analysis (API Key missing). Returning mock JSON analysis.');
     return {
       summary: "• Customer experienced a flashing red WAN status light on their home router.\n• Support Agent visually diagnosed a cabling error: internet cable was in LAN port.\n• Customer swapped the cable into the correct WAN port.\n• Connection status turned green and internet access was successfully restored.",
       action_items: [
@@ -76,7 +70,7 @@ ${transcript}
 CHAT MESSAGES:
 ${chatLog || '(no chat messages)'}
 
-Return ONLY a valid JSON object. No markdown, no code blocks, no preamble. Exact shape:
+Return ONLY a valid JSON object. Shape:
 {
   "summary": "3 to 5 bullet points separated by newlines, each starting with •",
   "action_items": ["string", "string"],
@@ -98,13 +92,13 @@ Rules:
 - resolution_status: one of "resolved", "unresolved", "escalated", "follow-up"
 - keywords: important topics mentioned (max 8)`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-3-5-sonnet-20241022',
-    max_tokens: 1500,
-    messages: [{ role: 'user', content: prompt }],
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-1.5-flash',
+    generationConfig: { responseMimeType: 'application/json' }
   });
 
-  const text = response.content[0].text;
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
   const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
   return JSON.parse(cleaned);
 }
@@ -147,7 +141,7 @@ async function runSessionIntelligence(sessionId) {
     }
 
     // Run analysis
-    const analysis = await analyzeWithClaude(transcript, chatResult.rows);
+    const analysis = await analyzeWithGemini(transcript, chatResult.rows);
 
     // Save results
     await db.query(

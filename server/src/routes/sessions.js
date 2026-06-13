@@ -54,13 +54,13 @@ const upload = multer({
 // POST /api/sessions — Agent creates a session
 router.post('/', verifyToken, requireRole('agent', 'admin'), async (req, res, next) => {
   try {
-    const { customerName, customerEmail, customerTelegram } = req.body;
+    const { customerName, customerEmail, customerTelegram, customerPhone } = req.body;
 
     if (!customerName) {
       return res.status(400).json({ error: 'Customer name is required' });
     }
-    if (!customerEmail && !customerTelegram) {
-      return res.status(400).json({ error: 'Provide at least one of: customerEmail, customerTelegram' });
+    if (!customerEmail && !customerTelegram && !customerPhone) {
+      return res.status(400).json({ error: 'Provide at least one of: customerEmail, customerTelegram, customerPhone' });
     }
 
     // Generate signed invite token
@@ -70,16 +70,14 @@ router.post('/', verifyToken, requireRole('agent', 'admin'), async (req, res, ne
       { expiresIn: config.jwt.inviteExpiry }
     );
 
-    // Public join URL construction (note client router route '/join')
-    // We parse host to matches what PUBLIC_URL points to (typically Client URL, so we construct appropriately)
-    const joinUrl = `${config.publicUrl.replace(':3001', ':5173')}/join?token=${inviteToken}`;
+    const joinUrl = `${config.clientUrl}/join?token=${inviteToken}`;
 
     // Create session in DB
     const result = await db.query(
-      `INSERT INTO sessions (agent_id, customer_name, customer_email, customer_telegram, invite_token, status)
-       VALUES ($1, $2, $3, $4, $5, 'waiting')
+      `INSERT INTO sessions (agent_id, customer_name, customer_email, customer_telegram, customer_phone, invite_token, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'waiting')
        RETURNING *`,
-      [req.user.id, customerName, customerEmail || null, customerTelegram || null, inviteToken]
+      [req.user.id, customerName, customerEmail || null, customerTelegram || null, customerPhone || null, inviteToken]
     );
 
     const session = result.rows[0];
@@ -97,6 +95,7 @@ router.post('/', verifyToken, requireRole('agent', 'admin'), async (req, res, ne
       joinUrl,
       customerEmail,
       customerTelegram,
+      customerPhone,
       customerName,
       agentName: req.user.name
     }).catch(err => {

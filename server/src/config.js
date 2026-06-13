@@ -27,6 +27,7 @@ const config = {
   port: parseInt(process.env.PORT || '3001'),
   mediaPort: parseInt(process.env.MEDIA_PORT || '3002'),
   publicUrl: required('PUBLIC_URL'),
+  clientUrl: process.env.CLIENT_URL || required('PUBLIC_URL').replace(':3001', ':5173'),
 
   jwt: {
     secret: required('JWT_SECRET'),
@@ -67,12 +68,14 @@ const config = {
     token: checkOptionalKey('TELEGRAM_BOT_TOKEN', 'Telegram Invite Dispatch'),
   },
 
-  openai: {
-    apiKey: checkOptionalKey('OPENAI_API_KEY', 'OpenAI Whisper Transcription'),
+  gemini: {
+    apiKey: checkOptionalKey('GEMINI_API_KEY', 'Gemini Session Intelligence'),
   },
 
-  anthropic: {
-    apiKey: checkOptionalKey('ANTHROPIC_API_KEY', 'Claude Session Intelligence'),
+  twilio: {
+    accountSid: checkOptionalKey('TWILIO_ACCOUNT_SID', 'Twilio SMS Invite Dispatch'),
+    authToken: checkOptionalKey('TWILIO_AUTH_TOKEN', 'Twilio SMS Invite Dispatch'),
+    fromNumber: process.env.TWILIO_FROM_NUMBER || '',
   },
 
   storage: {
