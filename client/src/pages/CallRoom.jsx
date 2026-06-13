@@ -68,6 +68,11 @@ export default function CallRoom() {
   const screenProducerRef = useRef(null);
   const consumersRef = useRef(new Map());
 
+  // Refs for client-side recording
+  const mediaRecorderRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const chunksRef = useRef([]);
+
   // Track window resizing
   useEffect(() => {
     let wasMobile = window.innerWidth <= 768;
@@ -364,6 +369,14 @@ export default function CallRoom() {
     initCall();
 
     return () => {
+      // Stop recording if active on unmount
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+      }
+
       // Cleanup local streams and transports
       producersRef.current.audio?.close();
       producersRef.current.video?.close();
@@ -499,6 +512,14 @@ export default function CallRoom() {
   async function handleEndCall() {
     if (!window.confirm('End this session for all participants?')) return;
     try {
+      if (isRecording) {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        const socket = getSocket();
+        await emitWithAck(socket, 'stop-recording', { sessionId, recordingId });
+        setIsRecording(false);
+      }
       await api.delete(`/sessions/${sessionId}/end`);
       setSessionEnded(true);
       setStatus('ended');
@@ -514,35 +535,137 @@ export default function CallRoom() {
 
   async function handleStartRecording() {
     try {
-      console.log('[Recording] Attempting to start recording...');
+      console.log('Recording status: Attempting to start');
       const socket = getSocket();
       const result = await emitWithAck(socket, 'start-recording', { sessionId });
       if (result.error) {
-        console.error('[Recording] Server returned error:', result.error);
+        console.error('Recording error:', result.error);
         alert(`Failed to start recording: ${result.error}`);
         return;
       }
-      console.log('[Recording] Started successfully:', result);
+      console.log('Recording status: Started successfully', result);
+      const rId = result.recordingId;
+      setRecordingId(rId);
+
+      // Mix local and remote audio using AudioContext
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioContextClass();
+      audioCtxRef.current = audioCtx;
+      const dest = audioCtx.createMediaStreamDestination();
+      let hasAudio = false;
+
+      // Add local audio
+      if (localStream && localStream.getAudioTracks().length > 0) {
+        const localSource = audioCtx.createMediaStreamSource(new MediaStream([localStream.getAudioTracks()[0]]));
+        localSource.connect(dest);
+        hasAudio = true;
+      }
+
+      // Add remote audio tracks from consumers
+      consumersRef.current.forEach((entry) => {
+        if (entry.kind === 'audio' && entry.consumer && entry.consumer.track) {
+          const remoteSource = audioCtx.createMediaStreamSource(new MediaStream([entry.consumer.track]));
+          remoteSource.connect(dest);
+          hasAudio = true;
+        }
+      });
+
+      // Video track selection (Customer video is priority, fallback to local)
+      let videoTrack = null;
+      if (remoteStream && remoteStream.getVideoTracks().length > 0) {
+        videoTrack = remoteStream.getVideoTracks()[0];
+      } else if (localStream && localStream.getVideoTracks().length > 0) {
+        videoTrack = localStream.getVideoTracks()[0];
+      }
+
+      const tracks = [];
+      if (videoTrack) {
+        tracks.push(videoTrack);
+      }
+      if (hasAudio && dest.stream.getAudioTracks().length > 0) {
+        tracks.push(dest.stream.getAudioTracks()[0]);
+      }
+
+      if (tracks.length === 0) {
+        throw new Error('No audio or video tracks available to record');
+      }
+
+      const recordStream = new MediaStream(tracks);
+
+      // Determine supported mime types for recording
+      let options = {};
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
+        options = { mimeType: 'video/webm;codecs=vp8,opus' };
+      } else if (MediaRecorder.isTypeSupported('video/webm')) {
+        options = { mimeType: 'video/webm' };
+      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+        options = { mimeType: 'video/mp4' };
+      }
+
+      const mediaRecorder = new MediaRecorder(recordStream, options);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        try {
+          console.log('Recording status: Processing recorded chunks');
+          const blob = new Blob(chunksRef.current, { type: options.mimeType || 'video/webm' });
+          const formData = new FormData();
+          formData.append('recording', blob, 'recording.webm');
+          formData.append('recordingId', rId);
+          formData.append('sessionId', sessionId);
+
+          console.log('Recording status: Uploading file to server...');
+          const uploadRes = await api.post('/recordings/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          console.log('Recording status: Upload completed successfully', uploadRes.data);
+        } catch (uploadErr) {
+          console.error('Recording upload error:', uploadErr);
+        } finally {
+          if (audioCtxRef.current) {
+            audioCtxRef.current.close().catch(() => {});
+            audioCtxRef.current = null;
+          }
+        }
+      };
+
+      mediaRecorder.start(1000);
       setIsRecording(true);
-      setRecordingId(result.recordingId);
+      console.log('Recording status: MediaRecorder started');
     } catch (err) {
-      console.error('[Recording] Exception starting recording:', err);
+      console.error('Recording error:', err);
+      alert(`Recording error: ${err.message}`);
+      setIsRecording(false);
     }
   }
 
   async function handleStopRecording() {
     try {
-      console.log('[Recording] Attempting to stop recording...', recordingId);
+      console.log('Recording status: Attempting to stop');
       const socket = getSocket();
+
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+
       const result = await emitWithAck(socket, 'stop-recording', { sessionId, recordingId });
       if (result && result.error) {
-        console.error('[Recording] Server returned error stopping:', result.error);
+        console.error('Recording error:', result.error);
       } else {
-        console.log('[Recording] Stopped successfully');
+        console.log('Recording status: Stopped successfully');
       }
       setIsRecording(false);
     } catch (err) {
-      console.error('[Recording] Exception stopping recording:', err);
+      console.error('Recording error:', err);
       setIsRecording(false);
     }
   }
@@ -774,7 +897,7 @@ export default function CallRoom() {
               background: '#ef4444',
               animation: 'pulse 1.5s ease-in-out infinite',
             }} />
-            RECORDING ON
+            Recording
           </div>
         )}
 

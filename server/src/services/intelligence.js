@@ -23,10 +23,11 @@ async function transcribeAudio(audioPath) {
     throw new Error(`Audio file not found: ${audioPath}`);
   }
 
+  const mimeType = audioPath.endsWith('.webm') ? 'video/webm' : 'video/mp4';
   const audioPart = {
     inlineData: {
       data: fs.readFileSync(audioPath).toString('base64'),
-      mimeType: 'video/mp4' // Using video/mp4 since ffmpeg saves it in mp4 format
+      mimeType
     }
   };
 
