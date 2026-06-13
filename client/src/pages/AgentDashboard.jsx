@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, User, LogOut, Shield, Calendar, Clock, ArrowRight } from 'lucide-react';
+import { Plus, User, LogOut, Shield, Calendar, Clock, ArrowRight, Download, MessageSquare, Video, Info, X, ExternalLink } from 'lucide-react';
 import api from '../api';
 
 export default function AgentDashboard() {
@@ -29,6 +29,13 @@ export default function AgentDashboard() {
   const [createError, setCreateError] = useState('');
   const [lastCreated, setLastCreated] = useState(null);
 
+  // Session Details state
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [details, setDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [recordings, setRecordings] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
+
   async function loadSessions() {
     try {
       const { data } = await api.get('/sessions');
@@ -42,10 +49,29 @@ export default function AgentDashboard() {
 
   useEffect(() => {
     loadSessions();
-    // Refresh every 30 seconds
     const interval = setInterval(loadSessions, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  async function loadSessionDetails(id) {
+    setSelectedSessionId(id);
+    setDetailsLoading(true);
+    setDetails(null);
+    try {
+      const [sessionRes, recsRes, chatRes] = await Promise.all([
+        api.get(`/sessions/${id}`),
+        api.get(`/recordings/${id}`),
+        api.get(`/chat/${id}`)
+      ]);
+      setDetails(sessionRes.data);
+      setRecordings(recsRes.data.recordings || []);
+      setChatMessages(chatRes.data.messages || []);
+    } catch (err) {
+      console.error('Failed to load session details:', err);
+    } finally {
+      setDetailsLoading(false);
+    }
+  }
 
   async function handleCreateSession(e) {
     e.preventDefault();
@@ -56,6 +82,8 @@ export default function AgentDashboard() {
       setLastCreated(data);
       setForm({ customerName: '', customerEmail: '', customerTelegram: '', customerPhone: '' });
       loadSessions();
+      // Optionally open details for new session:
+      // loadSessionDetails(data.session.id);
     } catch (err) {
       setCreateError(err.response?.data?.error || 'Failed to create session');
     } finally {
@@ -71,9 +99,9 @@ export default function AgentDashboard() {
   }
 
   const statusColors = {
-    waiting: '#eab308', // yellow
-    active: '#22c55e',  // green
-    ended: '#94a3b8',   // slate
+    waiting: '#eab308',
+    active: '#22c55e',
+    ended: '#94a3b8',
   };
 
   const statusBgs = {
@@ -171,10 +199,25 @@ export default function AgentDashboard() {
             padding: '16px 20px',
             borderBottom: '1px solid var(--color-border)',
             background: 'var(--color-surface)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
             <h2 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Support Sessions
             </h2>
+            {selectedSessionId && (
+              <button 
+                onClick={() => setSelectedSessionId(null)}
+                className="btn-interactive"
+                style={{
+                  background: 'none', border: 'none', color: 'var(--color-accent)', 
+                  fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                }}
+              >
+                <Plus size={12} /> New
+              </button>
+            )}
           </div>
 
           <div style={{ overflowY: 'auto', flex: 1, padding: '8px' }}>
@@ -196,25 +239,17 @@ export default function AgentDashboard() {
             {sessions.map(session => (
               <div
                 key={session.id}
-                onClick={() => window.open(`/session/${session.id}`, '_blank')}
+                onClick={() => loadSessionDetails(session.id)}
                 className="btn-interactive animate-fade-in"
                 style={{
                   padding: '14px 16px',
                   borderRadius: 'var(--radius-lg)',
-                  border: '1px solid transparent',
-                  background: 'var(--color-background)',
+                  border: selectedSessionId === session.id ? '1px solid var(--color-accent)' : '1px solid transparent',
+                  background: selectedSessionId === session.id ? 'var(--color-surface-raised)' : 'var(--color-background)',
                   marginBottom: '8px',
                   cursor: 'pointer',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.015)',
                   transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'var(--color-border)';
-                  e.currentTarget.style.background = 'var(--color-surface)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'transparent';
-                  e.currentTarget.style.background = 'var(--color-background)';
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
@@ -254,154 +289,340 @@ export default function AgentDashboard() {
           className="animate-fade-in"
           style={{ flex: 1, overflowY: isMobile ? 'visible' : 'auto', padding: isMobile ? 'var(--space-4)' : 'var(--space-8) var(--space-10)' }}
         >
-          <div style={{ maxWidth: '640px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>
-              Start Support Session
-            </h1>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: 'var(--space-8)' }}>
-              Create a support ticket session and automatically dispatch call invitations via Telegram, email, or SMS.
-            </p>
+          {selectedSessionId ? (
+            <SessionDetailsView 
+              loading={detailsLoading}
+              details={details}
+              recordings={recordings}
+              chatMessages={chatMessages}
+              onClose={() => setSelectedSessionId(null)}
+              formatDuration={formatDuration}
+              statusColors={statusColors}
+              statusBgs={statusBgs}
+              isMobile={isMobile}
+            />
+          ) : (
+            <div style={{ maxWidth: '640px' }}>
+              <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>
+                Start Support Session
+              </h1>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: 'var(--space-8)' }}>
+                Create a support ticket session and automatically dispatch call invitations via Telegram, email, or SMS.
+              </p>
 
-            <div style={{
-              background: 'var(--color-background)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-xl)',
-              padding: 'var(--space-6) var(--space-8)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.01)'
-            }}>
-              <form onSubmit={handleCreateSession}>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-                  <div style={fieldStyle}>
-                    <label style={labelStyle}>Customer Name *</label>
-                    <input
-                      style={inputStyle}
-                      value={form.customerName}
-                      onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))}
-                      className="input-focus-glow"
-                      placeholder="Rahul Sharma"
-                      required
-                    />
-                  </div>
+              <div style={{
+                background: 'var(--color-background)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-xl)',
+                padding: 'var(--space-6) var(--space-8)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.01)'
+              }}>
+                <form onSubmit={handleCreateSession}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+                    <div style={fieldStyle}>
+                      <label style={labelStyle}>Customer Name *</label>
+                      <input
+                        style={inputStyle}
+                        value={form.customerName}
+                        onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))}
+                        className="input-focus-glow"
+                        placeholder="Rahul Sharma"
+                        required
+                      />
+                    </div>
 
-                  <div style={fieldStyle}>
-                    <label style={labelStyle}>Customer Email</label>
-                    <input
-                      type="email"
-                      style={inputStyle}
-                      value={form.customerEmail}
-                      onChange={e => setForm(f => ({ ...f, customerEmail: e.target.value }))}
-                      className="input-focus-glow"
-                      placeholder="customer@example.com"
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
-                  <div style={fieldStyle}>
-                    <label style={labelStyle}>Telegram Username</label>
-                    <input
-                      style={inputStyle}
-                      value={form.customerTelegram}
-                      className="input-focus-glow"
-                      onChange={e => setForm(f => ({ ...f, customerTelegram: e.target.value }))}
-                      placeholder="username"
-                    />
-                  </div>
-
-                  <div style={fieldStyle}>
-                    <label style={labelStyle}>Phone Number (SMS)</label>
-                    <input
-                      style={inputStyle}
-                      value={form.customerPhone}
-                      className="input-focus-glow"
-                      onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))}
-                      placeholder="+916230931075"
-                    />
-                  </div>
-                </div>
-
-                {createError && (
-                  <div style={errorBoxStyle}>{createError}</div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="btn-interactive"
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    width: '100%', padding: '11px 16px',
-                    background: 'var(--color-accent)', color: 'var(--color-accent-text)',
-                    border: 'none', borderRadius: 'var(--radius-lg)',
-                    fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-                  }}
-                >
-                  <Plus size={16} /> {creating ? 'Creating session…' : 'Create Session & Dispatch Invites'}
-                </button>
-              </form>
-            </div>
-
-            {/* Invite Details display after creation */}
-            {lastCreated && (
-              <div 
-                className="animate-slide-up"
-                style={{
-                  marginTop: 'var(--space-6)',
-                  padding: 'var(--space-6)',
-                  background: 'var(--color-background)',
-                  border: '1px solid var(--color-success)',
-                  borderRadius: 'var(--radius-xl)',
-                  boxShadow: '0 4px 15px rgba(34, 197, 94, 0.05)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-success)' }} />
-                  Session Created & Invites Dispatched Successfully!
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-                  <div>
-                    <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
-                      Client Invite URL:
-                    </p>
-                    <div style={{
-                      fontFamily: 'var(--font-mono)', fontSize: '11.5px', padding: '10px 12px',
-                      background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)', wordBreak: 'break-all', color: 'var(--color-text-primary)',
-                    }}>
-                      {lastCreated.joinUrl}
+                    <div style={fieldStyle}>
+                      <label style={labelStyle}>Customer Email</label>
+                      <input
+                        type="email"
+                        style={inputStyle}
+                        value={form.customerEmail}
+                        onChange={e => setForm(f => ({ ...f, customerEmail: e.target.value }))}
+                        className="input-focus-glow"
+                        placeholder="customer@example.com"
+                      />
                     </div>
                   </div>
-                  <div>
-                    <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
-                      Agent URL:
-                    </p>
-                    <div style={{
-                      fontFamily: 'var(--font-mono)', fontSize: '11.5px', padding: '10px 12px',
-                      background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)', wordBreak: 'break-all', color: 'var(--color-text-primary)',
-                    }}>
-                      {`${window.location.origin}/session/${lastCreated.session.id}`}
+
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+                    <div style={fieldStyle}>
+                      <label style={labelStyle}>Telegram Username</label>
+                      <input
+                        style={inputStyle}
+                        value={form.customerTelegram}
+                        className="input-focus-glow"
+                        onChange={e => setForm(f => ({ ...f, customerTelegram: e.target.value }))}
+                        placeholder="username"
+                      />
+                    </div>
+
+                    <div style={fieldStyle}>
+                      <label style={labelStyle}>Phone Number (SMS)</label>
+                      <input
+                        style={inputStyle}
+                        value={form.customerPhone}
+                        className="input-focus-glow"
+                        onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))}
+                        placeholder="+916230931075"
+                      />
                     </div>
                   </div>
-                </div>
-                
-                <button
-                  onClick={() => window.open(`/session/${lastCreated.session.id}`, '_blank')}
-                  className="btn-interactive"
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    padding: '8px 18px', background: '#22c55e', color: '#fff',
-                    border: 'none', borderRadius: 'var(--radius-lg)',
-                    fontSize: '13px', fontWeight: 600, cursor: 'pointer'
-                  }}
-                >
-                  Join Call as Agent <ArrowRight size={14} />
-                </button>
+
+                  {createError && (
+                    <div style={errorBoxStyle}>{createError}</div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={creating}
+                    className="btn-interactive"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                      width: '100%', padding: '11px 16px',
+                      background: 'var(--color-accent)', color: 'var(--color-accent-text)',
+                      border: 'none', borderRadius: 'var(--radius-lg)',
+                      fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >
+                    <Plus size={16} /> {creating ? 'Creating session…' : 'Create Session & Dispatch Invites'}
+                  </button>
+                </form>
               </div>
-            )}
-          </div>
+
+              {/* Invite Details display after creation */}
+              {lastCreated && (
+                <div 
+                  className="animate-slide-up"
+                  style={{
+                    marginTop: 'var(--space-6)',
+                    padding: 'var(--space-6)',
+                    background: 'var(--color-background)',
+                    border: '1px solid var(--color-success)',
+                    borderRadius: 'var(--radius-xl)',
+                    boxShadow: '0 4px 15px rgba(34, 197, 94, 0.05)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-success)' }} />
+                    Session Created & Invites Dispatched Successfully!
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                    <div>
+                      <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
+                        Client Invite URL:
+                      </p>
+                      <div style={{
+                        fontFamily: 'var(--font-mono)', fontSize: '11.5px', padding: '10px 12px',
+                        background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)', wordBreak: 'break-all', color: 'var(--color-text-primary)',
+                      }}>
+                        {lastCreated.joinUrl}
+                      </div>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
+                        Agent URL:
+                      </p>
+                      <div style={{
+                        fontFamily: 'var(--font-mono)', fontSize: '11.5px', padding: '10px 12px',
+                        background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)', wordBreak: 'break-all', color: 'var(--color-text-primary)',
+                      }}>
+                        {`${window.location.origin}/session/${lastCreated.session.id}`}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => window.open(`/session/${lastCreated.session.id}`, '_blank')}
+                    className="btn-interactive"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      padding: '8px 18px', background: '#22c55e', color: '#fff',
+                      border: 'none', borderRadius: 'var(--radius-lg)',
+                      fontSize: '13px', fontWeight: 600, cursor: 'pointer'
+                    }}
+                  >
+                    Join Call as Agent <ArrowRight size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </main>
       </div>
+    </div>
+  );
+}
+
+function SessionDetailsView({ loading, details, recordings, chatMessages, onClose, formatDuration, statusColors, statusBgs, isMobile }) {
+  if (loading || !details) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <div style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>Loading session details...</div>
+      </div>
+    );
+  }
+
+  const { session, intelligence, events } = details;
+
+  return (
+    <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+              {session.customer_name}
+            </h1>
+            <div style={{ 
+              display: 'flex', alignItems: 'center', gap: '5px',
+              padding: '4px 10px', borderRadius: '12px',
+              background: statusBgs[session.status] || '#f1f5f9'
+            }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColors[session.status] || '#ccc' }} />
+              <span style={{ fontSize: '12px', fontWeight: 600, color: statusColors[session.status] || '#666', textTransform: 'capitalize' }}>
+                {session.status}
+              </span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={14} /> {new Date(session.created_at).toLocaleString()}</span>
+            <span>•</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> {formatDuration(session.duration_seconds)} duration</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {session.status !== 'ended' && (
+            <button
+              onClick={() => window.open(`/session/${session.id}`, '_blank')}
+              className="btn-interactive"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px', background: 'var(--color-accent)', color: '#fff',
+                border: 'none', borderRadius: 'var(--radius-lg)',
+                fontSize: '13px', fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              Join Call <ExternalLink size={14} />
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="btn-interactive"
+            style={{
+              padding: '8px', background: 'var(--color-surface-raised)', color: 'var(--color-text-secondary)',
+              border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', cursor: 'pointer'
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 'var(--space-6)' }}>
+        {/* Info Card */}
+        <div style={{ background: 'var(--color-background)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-5)' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Info size={16} /> Customer Information
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Email</span>
+              <span style={{ color: 'var(--color-text-primary)', fontWeight: 500 }}>{session.customer_email || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Phone</span>
+              <span style={{ color: 'var(--color-text-primary)', fontWeight: 500 }}>{session.customer_phone || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Telegram</span>
+              <span style={{ color: 'var(--color-text-primary)', fontWeight: 500 }}>{session.customer_telegram || '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Intelligence Card */}
+        {intelligence && intelligence.summary && (
+          <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.05) 0%, rgba(168,85,247,0.05) 100%)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-5)' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#6366f1', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              ✨ AI Session Summary
+            </h3>
+            <p style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
+              {intelligence.summary}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Recordings */}
+      {recordings && recordings.length > 0 && (
+        <div>
+          <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Video size={16} /> Session Recordings
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {recordings.map((rec) => (
+              <div key={rec.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(99,102,241,0.1)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Video size={16} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-primary)' }}>Recording Video</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{new Date(rec.started_at).toLocaleString()}</div>
+                  </div>
+                </div>
+                {rec.status === 'ready' ? (
+                  <a href={rec.download_url} download target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                    <button className="btn-interactive" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'var(--color-background)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-primary)', cursor: 'pointer' }}>
+                      <Download size={14} /> Download
+                    </button>
+                  </a>
+                ) : (
+                  <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 500 }}>Processing...</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Chat History */}
+      {chatMessages && chatMessages.length > 0 && (
+        <div style={{ flex: 1, minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <MessageSquare size={16} /> Chat History
+          </h3>
+          <div style={{ flex: 1, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-4)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {chatMessages.map((msg, i) => {
+              const isAgent = msg.sender_role === 'agent' || msg.sender_role === 'admin';
+              return (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: isAgent ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px', marginLeft: '4px', marginRight: '4px' }}>
+                    {msg.sender_name} • {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  <div style={{
+                    padding: '8px 12px', fontSize: '13px', lineHeight: 1.4,
+                    background: isAgent ? 'var(--color-accent)' : 'var(--color-background)',
+                    color: isAgent ? '#fff' : 'var(--color-text-primary)',
+                    borderRadius: '12px', border: isAgent ? 'none' : '1px solid var(--color-border)',
+                    maxWidth: '80%'
+                  }}>
+                    {msg.message_type === 'file' ? (
+                      <a href={msg.file_url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Download size={14} /> {msg.file_name}
+                      </a>
+                    ) : (
+                      msg.content
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
