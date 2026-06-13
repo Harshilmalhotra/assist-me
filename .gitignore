@@ -1,1 +1,10 @@
 BUILD_INSTRUCTIONS.md
+node_modules/
+.env
+.env.local
+dist/
+server/uploads/
+server/recordings/
+server/public/
+client/dist/
+.DS_Store
