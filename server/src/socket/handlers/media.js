@@ -68,7 +68,8 @@ module.exports = function handleMedia(io, socket) {
       const transport = data.transports.get(transportId);
       if (!transport) return callback({ error: 'Transport not found' });
 
-      const producer = await transport.produce({ kind, rtpParameters, appData });
+      const enhancedAppData = { ...(appData || {}), role: socket.user.role };
+      const producer = await transport.produce({ kind, rtpParameters, appData: enhancedAppData });
       data.producers.set(producer.id, producer);
 
       producer.on('transportclose', () => {

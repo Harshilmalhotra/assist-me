@@ -358,21 +358,31 @@ export default function AgentDashboard() {
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-success)' }} />
                   Session Created & Invites Dispatched Successfully!
                 </div>
-                <p style={{ fontSize: '12.5px', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)' }}>
-                  You can copy the session invite link below to share it manually if required:
-                </p>
-                <div style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11.5px',
-                  padding: '12px 14px',
-                  background: 'var(--color-surface-raised)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-lg)',
-                  wordBreak: 'break-all',
-                  color: 'var(--color-text-primary)',
-                  marginBottom: 'var(--space-4)'
-                }}>
-                  {lastCreated.joinUrl}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                  <div>
+                    <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
+                      Client Invite URL:
+                    </p>
+                    <div style={{
+                      fontFamily: 'var(--font-mono)', fontSize: '11.5px', padding: '10px 12px',
+                      background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', wordBreak: 'break-all', color: 'var(--color-text-primary)',
+                    }}>
+                      {lastCreated.joinUrl}
+                    </div>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
+                      Agent URL:
+                    </p>
+                    <div style={{
+                      fontFamily: 'var(--font-mono)', fontSize: '11.5px', padding: '10px 12px',
+                      background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', wordBreak: 'break-all', color: 'var(--color-text-primary)',
+                    }}>
+                      {`${window.location.origin}/session/${lastCreated.session.id}`}
+                    </div>
+                  </div>
                 </div>
                 
                 <button

@@ -33,4 +33,14 @@ async function createWebRtcTransport(router) {
   };
 }
 
-module.exports = { createWebRtcTransport };
+async function createPlainTransport(router) {
+  const transport = await router.createPlainTransport({
+    listenIp: { ip: '0.0.0.0', announcedIp: '127.0.0.1' },
+    rtcpMux: false,
+    comedia: false,
+  });
+
+  return transport;
+}
+
+module.exports = { createWebRtcTransport, createPlainTransport };

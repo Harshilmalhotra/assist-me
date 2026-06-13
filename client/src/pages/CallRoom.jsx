@@ -51,6 +51,7 @@ export default function CallRoom() {
   const [recordingId, setRecordingId] = useState(null);
   const [annotationActive, setAnnotationActive] = useState(false);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [intelligence, setIntelligence] = useState(null);
   const [messages, setMessages] = useState([]);
 
@@ -303,6 +304,11 @@ export default function CallRoom() {
         setStatus('active');
       } catch (err) {
         console.error('Call init error:', err);
+        if (err.message === 'Session has ended') {
+          setErrorMessage('Call has ended, contact Support to generate a new link');
+        } else {
+          setErrorMessage('Failed to establish connection. Check your internet or invite link permissions.');
+        }
         setStatus('error');
       }
     }
@@ -540,7 +546,7 @@ export default function CallRoom() {
   if (status === 'error') {
     return (
       <div style={loadingStyle}>
-        <p style={{ color: 'var(--color-danger)', fontWeight: 500 }}>Failed to establish connection. Check your internet or invite link permissions.</p>
+        <p style={{ color: 'var(--color-danger)', fontWeight: 500 }}>{errorMessage || 'Failed to establish connection. Check your internet or invite link permissions.'}</p>
         <button 
           onClick={() => navigate(isAgent ? '/dashboard' : '/')} 
           className="btn-interactive"
