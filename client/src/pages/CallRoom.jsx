@@ -485,7 +485,7 @@ export default function CallRoom() {
         <button 
           onClick={() => navigate(isAgent ? '/dashboard' : '/')} 
           className="btn-interactive"
-          style={{ marginTop: '16px', padding: '10px 20px', background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 'var(--radius-lg)', cursor: 'pointer', fontWeight: 600 }}
+          style={{ marginTop: '16px', padding: '10px 20px', background: 'var(--color-accent)', color: 'var(--color-accent-text)', border: 'none', borderRadius: 'var(--radius-lg)', cursor: 'pointer', fontWeight: 600 }}
         >
           Back to Dashboard
         </button>

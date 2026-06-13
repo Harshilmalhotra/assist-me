@@ -73,7 +73,7 @@ export default function IntelligenceCard({ intelligence }) {
                   labelFormatter={v => `Minute ${v}`}
                 />
                 <Line
-                  type="monotone" dataKey="score" stroke="#171717"
+                  type="monotone" dataKey="score" stroke="#2563EB"
                   strokeWidth={1.5} dot={{ r: 2 }} activeDot={{ r: 4 }}
                 />
               </LineChart>

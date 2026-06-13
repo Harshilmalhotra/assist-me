@@ -335,13 +335,13 @@ export default function AgentDashboard() {
                   marginTop: 'var(--space-6)',
                   padding: 'var(--space-6)',
                   background: 'var(--color-background)',
-                  border: '1px solid #22c55e',
+                  border: '1px solid var(--color-success)',
                   borderRadius: 'var(--radius-xl)',
-                  boxShadow: '0 4px 15px rgba(34, 197, 94, 0.08)',
+                  boxShadow: '0 4px 15px rgba(34, 197, 94, 0.05)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#15803d', fontWeight: 600, marginBottom: 'var(--space-2)' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-success)' }} />
                   Session Created & Invites Dispatched Successfully!
                 </div>
                 <p style={{ fontSize: '12.5px', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)' }}>

@@ -104,7 +104,7 @@ export default function CustomerJoin() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, var(--color-surface) 0%, var(--color-background) 100%)',
+      background: 'linear-gradient(135deg, var(--color-surface-raised) 0%, var(--color-background) 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -115,10 +115,9 @@ export default function CustomerJoin() {
         style={{
           width: '100%',
           maxWidth: state === 'ready' ? '860px' : '420px',
-          background: 'rgba(28, 28, 35, 0.55)',
-          backdropFilter: 'blur(20px)',
+          background: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)',
           borderRadius: 'var(--radius-xl)',
           padding: isMobile ? 'var(--space-6)' : 'var(--space-10)',
           transition: 'all 0.3s ease',

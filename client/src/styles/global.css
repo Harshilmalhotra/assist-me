@@ -5,35 +5,35 @@
 }
 
 :root {
-  /* Neutral palette — sleek darkish grey/light black theme */
-  --color-background: #0a0a0b;
-  --color-surface: #121214;
-  --color-surface-raised: #1c1c1f;
-  --color-border: #262628;
-  --color-border-strong: #38383b;
+  /* Neutral palette — Professional Blue theme */
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #F1F5F9;
+  --color-border: #E2E8F0;
+  --color-border-strong: #CBD5E1;
 
   /* Text */
-  --color-text-primary: #ededed;
-  --color-text-secondary: #a0a0a2;
-  --color-text-muted: #5c5c5e;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
 
   /* Accent — active states, primary buttons, links */
-  --color-accent: #ededed;
-  --color-accent-hover: #ffffff;
-  --color-accent-text: #0a0a0b;
+  --color-accent: #2563EB;
+  --color-accent-hover: #1D4ED8;
+  --color-accent-text: #FFFFFF;
 
-  /* Status colors — for badges, indicators only */
-  --color-success: #22c55e;
-  --color-success-bg: rgba(34, 197, 94, 0.12);
-  --color-warning: #eab308;
-  --color-warning-bg: rgba(234, 179, 8, 0.12);
-  --color-danger: #ef4444;
-  --color-danger-bg: rgba(239, 68, 68, 0.12);
-  --color-info: #3b82f6;
-  --color-info-bg: rgba(59, 130, 246, 0.12);
+  /* Status colors */
+  --color-success: #22C55E;
+  --color-success-bg: #DCFCE7;
+  --color-warning: #F59E0B;
+  --color-warning-bg: #FEF3C7;
+  --color-danger: #EF4444;
+  --color-danger-bg: #FEE2E2;
+  --color-info: #3B82F6;
+  --color-info-bg: #DBEAFE;
 
   /* Recording indicator */
-  --color-recording: #ef4444;
+  --color-recording: #EF4444;
 
   /* Typography */
   --font-sans: system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
