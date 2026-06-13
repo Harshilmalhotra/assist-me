@@ -552,9 +552,9 @@ export default function CallRoom() {
     );
   }
 
-  const hasActiveScreenShare = !!localScreenStream || !!remoteScreenStream;
-  const activeScreenStream = localScreenStream || remoteScreenStream;
-  const screenShareLabel = localScreenStream ? 'Your Screen Share' : (remoteParticipant ? `${remoteParticipant.name}'s Screen` : "Participant's Screen");
+  const showRemoteScreenShare = !!remoteScreenStream;
+  const showLocalScreenShare = !!localScreenStream;
+  const screenShareLabel = remoteParticipant ? `${remoteParticipant.name}'s Screen` : "Participant's Screen";
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#0a0a0a', overflow: 'hidden', position: 'relative' }}>
@@ -563,13 +563,13 @@ export default function CallRoom() {
         
         {/* Main Video Box */}
         <div style={{ flex: 1, position: 'relative', background: '#0f0f10' }}>
-          {hasActiveScreenShare ? (
-            // Screen Share takes main focus
+          {showRemoteScreenShare ? (
+            // Remote Screen Share takes main focus
             <VideoTile
-              stream={activeScreenStream}
+              stream={remoteScreenStream}
               label={screenShareLabel}
               isMuted={true}
-              isLocal={!!localScreenStream}
+              isLocal={false}
               isCameraOff={false}
               fit="contain"
             />
@@ -607,11 +607,54 @@ export default function CallRoom() {
               )}
             </VideoTile>
           )}
+
+          {/* Overlaid Banner when local user is sharing screen */}
+          {showLocalScreenShare && (
+            <div style={{
+              position: 'absolute',
+              top: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(10, 10, 11, 0.9)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              borderRadius: '30px',
+              padding: '8px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+              color: '#fff',
+              fontSize: '13px',
+              fontWeight: 500,
+              zIndex: 20,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.5s infinite' }} />
+                You are sharing your screen
+              </span>
+              <button
+                onClick={handleStopScreenShare}
+                style={{
+                  background: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '15px',
+                  padding: '4px 12px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Stop Sharing
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Small floating webcam tiles overlay (PIP style) */}
-        {hasActiveScreenShare ? (
-          // Two PIP feeds when screen sharing
+        {showRemoteScreenShare ? (
+          // Remote Screen Share is active: show both remote and local camera PIPs
           <div style={{
             position: 'absolute',
             top: '20px',
@@ -662,7 +705,8 @@ export default function CallRoom() {
             </div>
           </div>
         ) : (
-          // Standard single PIP feed (local camera)
+          // Remote Screen Share NOT active (either no share, or local user is sharing):
+          // Show local camera in single PIP (remote camera is in main viewport)
           <div style={{
             position: 'absolute',
             bottom: isMobile ? '92px' : '100px',
