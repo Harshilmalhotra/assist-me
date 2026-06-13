@@ -21,6 +21,7 @@ const setupSocket = require('./socket');
 const { startWorkers } = require('./media/worker');
 
 const app = express();
+app.enable('trust proxy');
 const httpServer = http.createServer(app);
 
 // Middleware

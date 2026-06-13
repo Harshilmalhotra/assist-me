@@ -70,7 +70,8 @@ router.post('/', verifyToken, requireRole('agent', 'admin'), async (req, res, ne
       { expiresIn: config.jwt.inviteExpiry }
     );
 
-    const joinUrl = `${config.clientUrl}/join?token=${inviteToken}`;
+    const origin = `${req.protocol}://${req.headers.host}`;
+    const joinUrl = `${origin}/join?token=${inviteToken}`;
 
     // Create session in DB
     const result = await db.query(

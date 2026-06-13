@@ -9,7 +9,8 @@ export function getSocket() {
 export function connectSocket({ token, inviteToken, customerName }) {
   if (socket?.connected) return socket;
 
-  socket = io(import.meta.env.VITE_SOCKET_URL, {
+  const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+  socket = io(socketUrl, {
     auth: { token, inviteToken, customerName },
     transports: ['websocket'],
     reconnection: true,
