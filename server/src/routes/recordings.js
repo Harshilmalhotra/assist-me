@@ -4,6 +4,7 @@ const verifyToken = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 const config = require('../config');
 const { runSessionIntelligence } = require('../services/intelligence');
 
@@ -20,7 +21,8 @@ const storage = multer.diskStorage({
     cb(null, config.storage.recordingDir);
   },
   filename: (req, file, cb) => {
-    const recordingId = req.body.recordingId;
+    const recordingId = req.body.recordingId || uuidv4();
+    req.preloadedRecordingId = recordingId;
     const ext = path.extname(file.originalname) || '.webm';
     cb(null, `${recordingId}${ext}`);
   },
@@ -28,7 +30,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB max for video recordings
+  limits: { fileSize: 1024 * 1024 * 1024 }, // 1 GB max for client-side video recordings
 });
 
 router.get('/:sessionId', verifyToken, async (req, res, next) => {
@@ -44,9 +46,22 @@ router.get('/:sessionId', verifyToken, async (req, res, next) => {
 });
 
 // POST /api/recordings/upload - Upload client-side video recording file
-router.post('/upload', verifyToken, upload.single('recording'), async (req, res, next) => {
+router.post('/upload', verifyToken, (req, res, next) => {
+  upload.single('recording')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'Recording file too large. Please stop and restart recording with a shorter duration.' });
+      }
+      return next(err);
+    }
+
+    req.uploadedRecording = true;
+    next();
+  });
+}, async (req, res, next) => {
   try {
-    const { sessionId, recordingId } = req.body;
+    const { sessionId, recordingId: requestedRecordingId } = req.body;
+    const recordingId = requestedRecordingId || req.preloadedRecordingId;
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }

@@ -609,23 +609,37 @@ export default function CallRoom() {
       mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
           chunksRef.current.push(e.data);
+          console.log(`Recording status: chunk added, size=${e.data.size}, total chunks=${chunksRef.current.length}`);
         }
       };
 
       mediaRecorder.onstop = async () => {
         try {
-          console.log('Recording status: Processing recorded chunks');
+          console.log('Recording status: onstop event fired. Processing recorded chunks. Count:', chunksRef.current.length);
           const blob = new Blob(chunksRef.current, { type: options.mimeType || 'video/webm' });
+          console.log('Recording status: Blob created. Size:', blob.size, 'Type:', blob.type);
+          
+          if (blob.size === 0) {
+             console.error('Recording error: Blob size is 0! No data recorded.');
+             return;
+          }
+
           const formData = new FormData();
           formData.append('recordingId', rId);
           formData.append('sessionId', sessionId);
           formData.append('recording', blob, 'recording.webm');
 
-          console.log('Recording status: Uploading file to server...');
+          console.log('Recording status: FormData ready. Uploading file to server for recordingId:', rId, 'sessionId:', sessionId);
+          
           const uploadRes = await api.post('/recordings/upload', formData);
           console.log('Recording status: Upload completed successfully', uploadRes.data);
         } catch (uploadErr) {
           console.error('Recording upload error:', uploadErr);
+          if (uploadErr.response?.status === 413) {
+            alert('Recording failed because the file was too large. Please stop and restart recording with a shorter duration.');
+          } else {
+            alert('Recording upload failed. Check your network and try again.');
+          }
         } finally {
           if (audioCtxRef.current) {
             audioCtxRef.current.close().catch(() => {});
@@ -636,7 +650,7 @@ export default function CallRoom() {
 
       mediaRecorder.start(1000);
       setIsRecording(true);
-      console.log('Recording status: MediaRecorder started');
+      console.log('Recording status: MediaRecorder started successfully with timeslice 1000ms');
     } catch (err) {
       console.error('Recording error:', err);
       alert(`Recording error: ${err.message}`);
