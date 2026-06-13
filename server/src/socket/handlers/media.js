@@ -81,6 +81,7 @@ module.exports = function handleMedia(io, socket) {
         kind,
         socketId: socket.id,
         role: socket.user.role,
+        appData: producer.appData,
       });
 
       callback({ id: producer.id });
@@ -156,6 +157,21 @@ module.exports = function handleMedia(io, socket) {
     }
   });
 
+  // Client requests to close a producer (like screen share)
+  socket.on('close-producer', async ({ sessionId, producerId }, callback) => {
+    try {
+      const data = getSessionData(sessionId);
+      const producer = data?.producers.get(producerId);
+      if (producer) {
+        producer.close();
+        data.producers.delete(producerId);
+      }
+      if (callback) callback({ success: true });
+    } catch (err) {
+      if (callback) callback({ error: err.message });
+    }
+  });
+
   // Request existing producers when joining a room that already has participants
   socket.on('get-producers', async ({ sessionId }, callback) => {
     try {
@@ -164,7 +180,7 @@ module.exports = function handleMedia(io, socket) {
 
       const producers = [];
       data.producers.forEach((producer, id) => {
-        producers.push({ producerId: id, kind: producer.kind });
+        producers.push({ producerId: id, kind: producer.kind, appData: producer.appData });
       });
 
       callback({ producers });
