@@ -34,6 +34,10 @@ services:
       context: ./server
       dockerfile: Dockerfile
     env_file: ./server/.env
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - REDIS_HOST=redis
     ports:
       - "3001:3001"
       - "40000-40100:40000-40100/udp"
