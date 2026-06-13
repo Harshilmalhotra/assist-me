@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Plus, User, LogOut, Shield, Calendar, Clock, ArrowRight } from 'lucide-react';
 import api from '../api';
 
 export default function AgentDashboard() {
@@ -62,242 +63,338 @@ export default function AgentDashboard() {
   }
 
   const statusColors = {
-    waiting: 'var(--color-warning)',
-    active: 'var(--color-success)',
-    ended: 'var(--color-text-muted)',
+    waiting: '#eab308', // yellow
+    active: '#22c55e',  // green
+    ended: '#94a3b8',   // slate
+  };
+
+  const statusBgs = {
+    waiting: '#fef9c3',
+    active: '#dcfce7',
+    ended: '#f1f5f9',
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      {/* Top bar */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f8fafc' }}>
+      {/* Top Header */}
       <header style={{
-        height: '52px',
+        height: '56px',
+        background: 'var(--color-background)',
         borderBottom: '1px solid var(--color-border)',
         display: 'flex',
         alignItems: 'center',
         padding: '0 var(--space-6)',
         justifyContent: 'space-between',
         flexShrink: 0,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
       }}>
-        <span style={{ fontWeight: 600 }}>Support Console</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '8px',
+            background: 'var(--color-accent)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', color: '#fff',
+            fontWeight: 'bold', fontSize: '16px'
+          }}>S</div>
+          <span style={{ fontWeight: 700, fontSize: '15px', tracking: '-0.01em' }}>Support Console</span>
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: '13px' }}>
-            {agent.name}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface-raised)', padding: '6px 12px', borderRadius: '20px' }}>
+            <User size={14} style={{ color: 'var(--color-text-secondary)' }} />
+            <span style={{ color: 'var(--color-text-primary)', fontSize: '12.5px', fontWeight: 500 }}>
+              {agent.name}
+            </span>
+          </div>
+
           {agent.role === 'admin' && (
             <button
               onClick={() => navigate('/admin')}
-              style={ghostButtonStyle}
+              className="btn-interactive"
+              style={{
+                padding: '6px 14px', background: 'none',
+                border: '1px solid var(--color-border)',
+                borderRadius: '20px', fontSize: '12.5px', cursor: 'pointer',
+                color: 'var(--color-text-secondary)', fontWeight: 500,
+                display: 'flex', alignItems: 'center', gap: '6px'
+              }}
             >
-              Admin
+              <Shield size={14} /> Admin
             </button>
           )}
+
           <button
             onClick={() => {
               localStorage.clear();
               navigate('/login');
             }}
-            style={ghostButtonStyle}
+            className="btn-interactive"
+            style={{
+              padding: '6px 14px', background: 'none',
+              border: '1px solid var(--color-border)',
+              borderRadius: '20px', fontSize: '12.5px', cursor: 'pointer',
+              color: 'var(--color-danger)', fontWeight: 500,
+              display: 'flex', alignItems: 'center', gap: '6px',
+            }}
           >
-            Sign out
+            <LogOut size={14} /> Sign out
           </button>
         </div>
       </header>
 
+      {/* Main Container */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Left: Session list */}
+        
+        {/* Left Sidebar: Session List */}
         <aside style={{
-          width: '320px',
+          width: '340px',
+          background: 'var(--color-surface)',
           borderRight: '1px solid var(--color-border)',
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
         }}>
           <div style={{
-            padding: 'var(--space-4) var(--space-5)',
+            padding: '16px 20px',
             borderBottom: '1px solid var(--color-border)',
+            background: 'var(--color-surface)',
           }}>
-            <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Sessions
+            <h2 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Support Sessions
             </h2>
           </div>
 
-          <div style={{ overflowY: 'auto', flex: 1 }}>
+          <div style={{ overflowY: 'auto', flex: 1, padding: '8px' }}>
             {loading && (
-              <div style={{ padding: 'var(--space-6)', color: 'var(--color-text-muted)', fontSize: '13px' }}>
-                Loading…
+              <div style={{ padding: 'var(--space-6)', color: 'var(--color-text-muted)', fontSize: '13px', textAlign: 'center' }}>
+                <div style={{
+                  width: '20px', height: '20px', border: '2px solid rgba(0,0,0,0.1)',
+                  borderTopColor: '#000', borderRadius: '50%', animation: 'pulse 1s linear infinite',
+                  margin: '0 auto 8px'
+                }} />
+                Loading sessions…
               </div>
             )}
             {!loading && sessions.length === 0 && (
-              <div style={{ padding: 'var(--space-6)', color: 'var(--color-text-muted)', fontSize: '13px' }}>
-                No sessions yet. Create one using the form.
+              <div style={{ padding: 'var(--space-6)', color: 'var(--color-text-muted)', fontSize: '13.5px', textAlign: 'center', lineHeight: 1.4 }}>
+                No support sessions found.<br />Create one using the form on the right.
               </div>
             )}
             {sessions.map(session => (
               <div
                 key={session.id}
                 onClick={() => navigate(`/session/${session.id}`)}
+                className="btn-interactive animate-fade-in"
                 style={{
-                  padding: 'var(--space-4) var(--space-5)',
-                  borderBottom: '1px solid var(--color-border)',
+                  padding: '14px 16px',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid transparent',
+                  background: 'var(--color-background)',
+                  marginBottom: '8px',
                   cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.015)',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                  e.currentTarget.style.background = 'var(--color-surface)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'transparent';
+                  e.currentTarget.style.background = 'var(--color-background)';
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-1)' }}>
-                  <span style={{ fontWeight: 500 }}>{session.customer_name}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-primary)', fontSize: '13.5px' }}>
+                    {session.customer_name}
+                  </span>
+                  <div style={{ 
+                    display: 'flex', alignItems: 'center', gap: '5px',
+                    padding: '2px 8px', borderRadius: '12px',
+                    background: statusBgs[session.status] || '#f1f5f9'
+                  }}>
                     <div style={{
                       width: '6px', height: '6px', borderRadius: '50%',
-                      background: statusColors[session.status],
+                      background: statusColors[session.status] || '#ccc',
                     }} />
-                    <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    <span style={{ 
+                      fontSize: '11px', fontWeight: 600, 
+                      color: statusColors[session.status] || '#666',
+                      textTransform: 'capitalize'
+                    }}>
                       {session.status}
                     </span>
                   </div>
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                  {new Date(session.created_at).toLocaleString()} · {formatDuration(session.duration_seconds)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Calendar size={11} /> {new Date(session.created_at).toLocaleDateString()}</span>
+                  <span>•</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Clock size={11} /> {formatDuration(session.duration_seconds)}</span>
                 </div>
               </div>
             ))}
           </div>
         </aside>
 
-        {/* Right: Create session form */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-8)' }}>
-          <h1 style={{ fontSize: '20px', fontWeight: 600, marginBottom: 'var(--space-6)' }}>
-            Start a new session
-          </h1>
+        {/* Right Dashboard Area */}
+        <main 
+          className="animate-fade-in"
+          style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-8) var(--space-10)' }}
+        >
+          <div style={{ maxWidth: '640px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>
+              Start Support Session
+            </h1>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: 'var(--space-8)' }}>
+              Create a support ticket session and automatically dispatch call invitations via Telegram, email, or SMS.
+            </p>
 
-          <form onSubmit={handleCreateSession} style={{ maxWidth: '480px' }}>
-            <div style={fieldStyle}>
-              <label style={labelStyle}>Customer name *</label>
-              <input
-                style={inputStyle}
-                value={form.customerName}
-                onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))}
-                placeholder="Rahul Sharma"
-                required
-              />
-            </div>
-
-            <div style={fieldStyle}>
-              <label style={labelStyle}>Customer email</label>
-              <input
-                type="email"
-                style={inputStyle}
-                value={form.customerEmail}
-                onChange={e => setForm(f => ({ ...f, customerEmail: e.target.value }))}
-                placeholder="customer@example.com"
-              />
-              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)', display: 'block' }}>
-                An invite link will be sent to this address
-              </span>
-            </div>
-
-            <div style={fieldStyle}>
-              <label style={labelStyle}>Customer Telegram username</label>
-              <input
-                style={inputStyle}
-                value={form.customerTelegram}
-                onChange={e => setForm(f => ({ ...f, customerTelegram: e.target.value }))}
-                placeholder="username"
-              />
-              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)', display: 'block' }}>
-                Customer must have messaged your bot at least once. Include or omit the @.
-              </span>
-            </div>
-
-            <div style={fieldStyle}>
-              <label style={labelStyle}>Customer phone number</label>
-              <input
-                style={inputStyle}
-                value={form.customerPhone}
-                onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))}
-                placeholder="+1234567890"
-              />
-              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)', display: 'block' }}>
-                An invite link will be sent via Twilio SMS to this phone number
-              </span>
-            </div>
-
-            {createError && (
-              <div style={errorBoxStyle}>{createError}</div>
-            )}
-
-            <button
-              type="submit"
-              disabled={creating}
-              style={{ ...primaryButtonStyle, marginTop: 'var(--space-2)' }}
-            >
-              {creating ? 'Creating…' : 'Create session and send invite'}
-            </button>
-          </form>
-
-          {/* Join link display after creation */}
-          {lastCreated && (
             <div style={{
-              marginTop: 'var(--space-8)',
-              padding: 'var(--space-5)',
+              background: 'var(--color-background)',
               border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)',
-              maxWidth: '480px',
+              borderRadius: 'var(--radius-xl)',
+              padding: 'var(--space-6) var(--space-8)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.01)'
             }}>
-              <p style={{ fontWeight: 500, marginBottom: 'var(--space-2)' }}>
-                Session created — invite sent
-              </p>
-              <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
-                Share this link manually if needed:
-              </p>
-              <div style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '12px',
-                padding: 'var(--space-3)',
-                background: 'var(--color-surface-raised)',
-                borderRadius: 'var(--radius-md)',
-                wordBreak: 'break-all',
-                color: 'var(--color-text-primary)',
-              }}>
-                {lastCreated.joinUrl}
-              </div>
-              <button
-                onClick={() => navigate(`/session/${lastCreated.session.id}`)}
-                style={{ ...primaryButtonStyle, marginTop: 'var(--space-4)', width: 'auto', padding: '8px 16px' }}
-              >
-                Join as agent
-              </button>
+              <form onSubmit={handleCreateSession}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+                  <div style={fieldStyle}>
+                    <label style={labelStyle}>Customer Name *</label>
+                    <input
+                      style={inputStyle}
+                      value={form.customerName}
+                      onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))}
+                      className="input-focus-glow"
+                      placeholder="Rahul Sharma"
+                      required
+                    />
+                  </div>
+
+                  <div style={fieldStyle}>
+                    <label style={labelStyle}>Customer Email</label>
+                    <input
+                      type="email"
+                      style={inputStyle}
+                      value={form.customerEmail}
+                      onChange={e => setForm(f => ({ ...f, customerEmail: e.target.value }))}
+                      className="input-focus-glow"
+                      placeholder="customer@example.com"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+                  <div style={fieldStyle}>
+                    <label style={labelStyle}>Telegram Username</label>
+                    <input
+                      style={inputStyle}
+                      value={form.customerTelegram}
+                      className="input-focus-glow"
+                      onChange={e => setForm(f => ({ ...f, customerTelegram: e.target.value }))}
+                      placeholder="username"
+                    />
+                  </div>
+
+                  <div style={fieldStyle}>
+                    <label style={labelStyle}>Phone Number (SMS)</label>
+                    <input
+                      style={inputStyle}
+                      value={form.customerPhone}
+                      className="input-focus-glow"
+                      onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))}
+                      placeholder="+916230931075"
+                    />
+                  </div>
+                </div>
+
+                {createError && (
+                  <div style={errorBoxStyle}>{createError}</div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="btn-interactive"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    width: '100%', padding: '11px 16px',
+                    background: 'var(--color-accent)', color: 'var(--color-accent-text)',
+                    border: 'none', borderRadius: 'var(--radius-lg)',
+                    fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  <Plus size={16} /> {creating ? 'Creating session…' : 'Create Session & Dispatch Invites'}
+                </button>
+              </form>
             </div>
-          )}
+
+            {/* Invite Details display after creation */}
+            {lastCreated && (
+              <div 
+                className="animate-slide-up"
+                style={{
+                  marginTop: 'var(--space-6)',
+                  padding: 'var(--space-6)',
+                  background: 'var(--color-background)',
+                  border: '1px solid #22c55e',
+                  borderRadius: 'var(--radius-xl)',
+                  boxShadow: '0 4px 15px rgba(34, 197, 94, 0.08)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#15803d', fontWeight: 600, marginBottom: 'var(--space-2)' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e' }} />
+                  Session Created & Invites Dispatched Successfully!
+                </div>
+                <p style={{ fontSize: '12.5px', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)' }}>
+                  You can copy the session invite link below to share it manually if required:
+                </p>
+                <div style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11.5px',
+                  padding: '12px 14px',
+                  background: 'var(--color-surface-raised)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-lg)',
+                  wordBreak: 'break-all',
+                  color: 'var(--color-text-primary)',
+                  marginBottom: 'var(--space-4)'
+                }}>
+                  {lastCreated.joinUrl}
+                </div>
+                
+                <button
+                  onClick={() => navigate(`/session/${lastCreated.session.id}`)}
+                  className="btn-interactive"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '8px 18px', background: '#22c55e', color: '#fff',
+                    border: 'none', borderRadius: 'var(--radius-lg)',
+                    fontSize: '13px', fontWeight: 600, cursor: 'pointer'
+                  }}
+                >
+                  Join Call as Agent <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
+          </div>
         </main>
       </div>
     </div>
   );
 }
 
-const fieldStyle = { marginBottom: 'var(--space-5)' };
-const labelStyle = { display: 'block', fontWeight: 500, marginBottom: 'var(--space-1)', fontSize: '13px' };
+const fieldStyle = { display: 'flex', flexDirection: 'column' };
+const labelStyle = { display: 'block', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px', fontSize: '12.5px' };
 const inputStyle = {
-  width: '100%', padding: '8px 12px',
+  width: '100%', padding: '9px 12px',
   border: '1px solid var(--color-border)',
-  borderRadius: 'var(--radius-md)',
-  fontSize: '14px', background: 'var(--color-background)',
+  borderRadius: 'var(--radius-lg)',
+  fontSize: '13.5px', background: 'var(--color-background)',
   color: 'var(--color-text-primary)', outline: 'none',
-};
-const primaryButtonStyle = {
-  display: 'block', width: '100%', padding: '9px 16px',
-  background: 'var(--color-accent)', color: '#fff',
-  border: 'none', borderRadius: 'var(--radius-md)',
-  fontSize: '14px', fontWeight: 500, cursor: 'pointer',
-};
-const ghostButtonStyle = {
-  padding: '5px 10px', background: 'transparent',
-  border: '1px solid var(--color-border)',
-  borderRadius: 'var(--radius-md)',
-  fontSize: '13px', cursor: 'pointer',
-  color: 'var(--color-text-secondary)',
 };
 const errorBoxStyle = {
   padding: 'var(--space-3)', marginBottom: 'var(--space-4)',
   background: 'var(--color-danger-bg)', color: 'var(--color-danger)',
   borderRadius: 'var(--radius-md)', fontSize: '13px',
+  border: '1px solid rgba(220, 38, 38, 0.15)',
+  textAlign: 'center'
 };

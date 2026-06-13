@@ -31,27 +31,42 @@ export default function AgentLogin() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'var(--color-surface)',
+      background: 'linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-raised) 100%)',
+      padding: 'var(--space-4)',
     }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '360px',
-        padding: 'var(--space-8)',
-        background: 'var(--color-background)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-xl)',
-      }}>
-        <h1 style={{ fontSize: '18px', fontWeight: 600, marginBottom: 'var(--space-1)' }}>
+      <div 
+        className="glass-card animate-fade-in"
+        style={{
+          width: '100%',
+          maxWidth: '380px',
+          padding: 'var(--space-8) var(--space-10)',
+          borderRadius: 'var(--radius-xl)',
+          color: 'var(--color-text-primary)',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+        }}
+      >
+        <span style={{
+          fontSize: '11px',
+          fontWeight: 600,
+          color: 'var(--color-accent)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          display: 'block',
+          marginBottom: 'var(--space-1)'
+        }}>
+          Internal Portal
+        </span>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: 'var(--space-1)', color: 'var(--color-text-primary)' }}>
           Support Console
         </h1>
-        <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)' }}>
-          Sign in to your agent account
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: 'var(--space-6)' }}>
+          Sign in to your agent console
         </p>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 'var(--space-4)' }}>
-            <label style={{ display: 'block', marginBottom: 'var(--space-1)', fontWeight: 500 }}>
-              Email
+            <label style={{ display: 'block', marginBottom: 'var(--space-2)', fontWeight: 500, fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+              Email address
             </label>
             <input
               type="email"
@@ -59,13 +74,23 @@ export default function AgentLogin() {
               onChange={e => setEmail(e.target.value)}
               required
               autoFocus
-              style={inputStyle}
+              className="input-focus-glow"
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: '14px',
+                background: 'var(--color-background)',
+                color: 'var(--color-text-primary)',
+                outline: 'none',
+              }}
               placeholder="agent@example.com"
             />
           </div>
 
-          <div style={{ marginBottom: 'var(--space-5)' }}>
-            <label style={{ display: 'block', marginBottom: 'var(--space-1)', fontWeight: 500 }}>
+          <div style={{ marginBottom: 'var(--space-6)' }}>
+            <label style={{ display: 'block', marginBottom: 'var(--space-2)', fontWeight: 500, fontSize: '13px', color: 'var(--color-text-secondary)' }}>
               Password
             </label>
             <input
@@ -73,7 +98,18 @@ export default function AgentLogin() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              style={inputStyle}
+              className="input-focus-glow"
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: '14px',
+                background: 'var(--color-background)',
+                color: 'var(--color-text-primary)',
+                outline: 'none',
+              }}
+              placeholder="••••••••"
             />
           </div>
 
@@ -83,8 +119,10 @@ export default function AgentLogin() {
               marginBottom: 'var(--space-4)',
               background: 'var(--color-danger-bg)',
               color: 'var(--color-danger)',
+              border: '1px solid rgba(220, 38, 38, 0.15)',
               borderRadius: 'var(--radius-md)',
               fontSize: '13px',
+              textAlign: 'center'
             }}>
               {error}
             </div>
@@ -93,36 +131,24 @@ export default function AgentLogin() {
           <button
             type="submit"
             disabled={loading}
-            style={primaryButtonStyle}
+            className="btn-interactive"
+            style={{
+              width: '100%',
+              padding: '11px 16px',
+              background: 'var(--color-accent)',
+              color: 'var(--color-accent-text)',
+              border: 'none',
+              borderRadius: 'var(--radius-lg)',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+            }}
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Signing in…' : 'Sign in to Console'}
           </button>
         </form>
       </div>
     </div>
   );
 }
-
-const inputStyle = {
-  width: '100%',
-  padding: '8px 12px',
-  border: '1px solid var(--color-border)',
-  borderRadius: 'var(--radius-md)',
-  fontSize: '14px',
-  background: 'var(--color-background)',
-  color: 'var(--color-text-primary)',
-  outline: 'none',
-  transition: 'border-color var(--transition-fast)',
-};
-
-const primaryButtonStyle = {
-  width: '100%',
-  padding: '9px 16px',
-  background: 'var(--color-accent)',
-  color: '#ffffff',
-  border: 'none',
-  borderRadius: 'var(--radius-md)',
-  fontSize: '14px',
-  fontWeight: 500,
-  cursor: 'pointer',
-};
