@@ -29,5 +29,33 @@ services:
       timeout: 3s
       retries: 5
 
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    env_file: ./server/.env
+    ports:
+      - "3001:3001"
+      - "40000-40100:40000-40100/udp"
+    volumes:
+      - uploads:/app/uploads
+      - recordings:/app/recordings
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+
 volumes:
   postgres_data:
+  uploads:
+  recordings:
