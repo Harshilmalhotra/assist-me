@@ -29,6 +29,21 @@ export default function AgentDashboard() {
   const [createError, setCreateError] = useState('');
   const [lastCreated, setLastCreated] = useState(null);
 
+  // Copy states
+  const [copiedClient, setCopiedClient] = useState(false);
+  const [copiedAgent, setCopiedAgent] = useState(false);
+
+  const copyToClipboard = (text, type) => {
+    navigator.clipboard.writeText(text);
+    if (type === 'client') {
+      setCopiedClient(true);
+      setTimeout(() => setCopiedClient(false), 2000);
+    } else {
+      setCopiedAgent(true);
+      setTimeout(() => setCopiedAgent(false), 2000);
+    }
+  };
+
   // Session Details state
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [details, setDetails] = useState(null);
@@ -433,24 +448,66 @@ export default function AgentDashboard() {
                       <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
                         Client Invite URL:
                       </p>
-                      <div style={{
-                        fontFamily: 'var(--font-mono)', fontSize: '11.5px', padding: '10px 12px',
-                        background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-md)', wordBreak: 'break-all', color: 'var(--color-text-primary)',
-                      }}>
-                        {lastCreated.joinUrl}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+                        <div style={{
+                          flex: 1, fontFamily: 'var(--font-mono)', fontSize: '11.5px', padding: '10px 12px',
+                          background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)',
+                          borderRadius: 'var(--radius-md)', wordBreak: 'break-all', color: 'var(--color-text-primary)',
+                        }}>
+                          {lastCreated.joinUrl}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(lastCreated.joinUrl, 'client')}
+                          className="btn-interactive"
+                          style={{
+                            padding: '0 16px',
+                            background: copiedClient ? '#22c55e' : 'var(--color-accent)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            minWidth: '70px',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {copiedClient ? 'Copied!' : 'Copy'}
+                        </button>
                       </div>
                     </div>
                     <div>
                       <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
                         Agent URL:
                       </p>
-                      <div style={{
-                        fontFamily: 'var(--font-mono)', fontSize: '11.5px', padding: '10px 12px',
-                        background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-md)', wordBreak: 'break-all', color: 'var(--color-text-primary)',
-                      }}>
-                        {`${window.location.origin}/session/${lastCreated.session.id}`}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+                        <div style={{
+                          flex: 1, fontFamily: 'var(--font-mono)', fontSize: '11.5px', padding: '10px 12px',
+                          background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)',
+                          borderRadius: 'var(--radius-md)', wordBreak: 'break-all', color: 'var(--color-text-primary)',
+                        }}>
+                          {`${window.location.origin}/session/${lastCreated.session.id}`}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(`${window.location.origin}/session/${lastCreated.session.id}`, 'agent')}
+                          className="btn-interactive"
+                          style={{
+                            padding: '0 16px',
+                            background: copiedAgent ? '#22c55e' : 'var(--color-accent)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            minWidth: '70px',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {copiedAgent ? 'Copied!' : 'Copy'}
+                        </button>
                       </div>
                     </div>
                   </div>

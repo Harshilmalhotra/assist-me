@@ -617,16 +617,12 @@ export default function CallRoom() {
           console.log('Recording status: Processing recorded chunks');
           const blob = new Blob(chunksRef.current, { type: options.mimeType || 'video/webm' });
           const formData = new FormData();
-          formData.append('recording', blob, 'recording.webm');
           formData.append('recordingId', rId);
           formData.append('sessionId', sessionId);
+          formData.append('recording', blob, 'recording.webm');
 
           console.log('Recording status: Uploading file to server...');
-          const uploadRes = await api.post('/recordings/upload', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
+          const uploadRes = await api.post('/recordings/upload', formData);
           console.log('Recording status: Upload completed successfully', uploadRes.data);
         } catch (uploadErr) {
           console.error('Recording upload error:', uploadErr);
@@ -797,6 +793,37 @@ export default function CallRoom() {
               >
                 Stop Sharing
               </button>
+            </div>
+          )}
+
+          {/* Recording Indicator */}
+          {isRecording && (
+            <div style={{
+              position: 'absolute',
+              top: '20px',
+              left: '20px',
+              background: 'rgba(0, 0, 0, 0.6)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: '20px',
+              padding: '6px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: '#fff',
+              fontSize: '12px',
+              fontWeight: 600,
+              zIndex: 20,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            }}>
+              <span style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#ef4444',
+                boxShadow: '0 0 8px #ef4444',
+                animation: 'pulse 1.5s infinite'
+              }} />
+              Recording
             </div>
           )}
         </div>
