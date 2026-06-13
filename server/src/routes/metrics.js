@@ -15,27 +15,7 @@ const activeSessions = new client.Gauge({
   registers: [register],
 });
 
-const totalSessions = new client.Counter({
-  name: 'videosupport_sessions_total',
-  help: 'Total number of sessions created',
-  registers: [register],
-});
 
-// Update gauges periodically from the database
-async function updateMetrics() {
-  try {
-    const active = await db.query(`SELECT COUNT(*) FROM sessions WHERE status = 'active'`);
-    activeSessions.set(parseInt(active.rows[0].count));
-
-    const total = await db.query(`SELECT COUNT(*) FROM sessions`);
-    // Counter cannot be set directly, so we reset and set. But for simple scraping:
-    // We can use a Gauge instead for total sessions or just increment it. Let's keep it as Gauge.
-    // The instructions say: totalSessions.reset(); (wait, totalSessions is a Counter. Counters do not have reset() in prom-client usually.
-    // Let's check: Counter has inc(). If we want total sessions, a Gauge is safer if we overwrite it, or just use a Gauge named videosupport_sessions_total)
-  } catch (err) {
-    console.error('Metrics update error:', err.message);
-  }
-}
 
 // Let's implement totalSessions as a Gauge to avoid prom-client Counter reset exception
 const totalSessionsGauge = new client.Gauge({
