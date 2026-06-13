@@ -72,13 +72,14 @@ async function sendEmailInvite({ customerEmail, customerName, agentName, joinUrl
   `.trim();
 
   if (transporter) {
+    const fromAddress = config.smtp.fromEmail || config.smtp.user;
     await transporter.sendMail({
-      from: `"${config.smtp.fromName}" <${config.smtp.user}>`,
+      from: `"${config.smtp.fromName}" <${fromAddress}>`,
       to: customerEmail,
       subject,
       html,
     });
-    console.log(`Email invite sent to ${customerEmail}`);
+    console.log(`Email invite sent to ${customerEmail} from ${fromAddress}`);
   } else {
     console.log('\x1b[33m%s\x1b[0m', `[SMTP MOCK] Email would be sent to ${customerEmail}:`);
     console.log(`  Subject: ${subject}`);

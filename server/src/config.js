@@ -62,6 +62,7 @@ const config = {
     user: checkOptionalKey('SMTP_USER', 'Email Dispatch (SMTP)'),
     pass: checkOptionalKey('SMTP_PASS', 'Email Dispatch (SMTP)'),
     fromName: process.env.SMTP_FROM_NAME || 'Support Team',
+    fromEmail: process.env.SMTP_FROM_EMAIL || '',
   },
 
   telegram: {
