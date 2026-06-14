@@ -92,8 +92,8 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON chat_messages(session
 CREATE INDEX IF NOT EXISTS idx_session_events_session_id ON session_events(session_id);
 CREATE INDEX IF NOT EXISTS idx_recordings_session_id ON recordings(session_id);
 
--- Seed default accounts (bcrypt hash of 'admin123' and 'agent123')
+-- Seed default accounts (bcrypt hashes of 'admin123' and 'agent123')
 INSERT INTO agents (email, name, password_hash, role) VALUES
   ('admin@example.com', 'Admin User', '$2b$12$iUMiXWKwpqnCU.8IuFLYk.NyFnWAb86H/pcxBAxK0qs10ZDMjhi/y', 'admin'),
-  ('agent@example.com', 'Support Agent', '$2b$12$iUMiXWKwpqnCU.8IuFLYk.NyFnWAb86H/pcxBAxK0qs10ZDMjhi/y', 'agent')
+  ('agent@example.com', 'Support Agent', '$2b$12$3QzZXj9w18Gb5bcL9wyU9.kOU6KsScGtSraI3598htyOAo7Hk8cFG', 'agent')
 ON CONFLICT (email) DO NOTHING;
