@@ -86,7 +86,9 @@ const config = {
 
   reconnectGraceSeconds: parseInt(process.env.RECONNECT_GRACE_SECONDS || '30'),
 };
-
+if (config.mediasoup.rtcMaxPort - config.mediasoup.rtcMinPort < 20) {
+  console.warn(`\x1b[33m[KNP] mediasoup UDP port range is too small: ${config.mediasoup.rtcMinPort}-${config.mediasoup.rtcMaxPort}. Use at least 50 ports to avoid port exhaustion.\x1b[0m`);
+}
 console.log('\x1b[36m-----------------------------------------\x1b[0m');
 
 module.exports = config;
