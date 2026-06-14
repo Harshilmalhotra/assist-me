@@ -5,6 +5,7 @@ import CallRoom from './pages/CallRoom';
 import CustomerJoin from './pages/CustomerJoin';
 import AdminDashboard from './pages/AdminDashboard';
 import './styles/global.css';
+import { ThemeProvider } from './theme/ThemeContext';
 
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('agent_token');
@@ -23,7 +24,8 @@ function PrivateRoute({ children, role }) {
 
 function App() {
   return (
-    <BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
       <Routes>
         <Route path="/login" element={<AgentLogin />} />
         <Route path="/dashboard" element={
@@ -40,7 +42,8 @@ function App() {
         <Route path="/join" element={<CustomerJoin />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

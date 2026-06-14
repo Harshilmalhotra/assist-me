@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, FileText, Download } from 'lucide-react';
 import { getSocket } from '../socket';
 import api from '../api';
+import FilePreview from './FilePreview';
 
 export default function ChatPanel({ sessionId, messages, myRole, myName, isAgent }) {
   const [inputText, setInputText] = useState('');
@@ -9,6 +10,7 @@ export default function ChatPanel({ sessionId, messages, myRole, myName, isAgent
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const [preview, setPreview] = useState(null);
 
   // Auto-scroll chat to bottom when new messages arrive
   useEffect(() => {
@@ -56,11 +58,12 @@ export default function ChatPanel({ sessionId, messages, myRole, myName, isAgent
         sessionId,
         content: `Shared a file: ${file.name}`,
         messageType: 'file',
-        fileUrl: data.message.file_url || data.fileUrl,
+        fileUrl: data.message?.file_url || data.fileUrl,
         fileName: file.name,
         fileSize: file.size,
+        fileType: file.type,
       }, (res) => {
-        if (res.error) console.error('Socket notification for upload failed:', res.error);
+        if (res?.error) console.error('Socket notification for upload failed:', res.error);
       });
 
     } catch (err) {
@@ -72,6 +75,7 @@ export default function ChatPanel({ sessionId, messages, myRole, myName, isAgent
   }
 
   function formatBytes(bytes) {
+    if (!bytes) return '';
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB'];
@@ -93,14 +97,18 @@ export default function ChatPanel({ sessionId, messages, myRole, myName, isAgent
       </div>
 
       {/* Messages area */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: 'var(--space-4) var(--space-5)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-4)',
-      }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: 'var(--space-4) var(--space-5)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-4)',
+        }}
+        aria-live="polite"
+        aria-atomic="false"
+      >
         {messages.length === 0 && (
           <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '13px' }}>
             No messages yet. Send a message below.
@@ -138,9 +146,9 @@ export default function ChatPanel({ sessionId, messages, myRole, myName, isAgent
                 }}>
                   <FileText size={20} style={{ color: 'var(--color-text-secondary)' }} />
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 500, wordBreak: 'break-all' }}>
-                      {msg.file_name || msg.content}
-                    </span>
+                    <button onClick={() => setPreview({ url: msg.file_url, type: msg.file_type || msg.fileType || '' })} style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 500, wordBreak: 'break-all' }}>{msg.file_name || msg.content}</span>
+                    </button>
                     <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
                       {msg.file_size ? formatBytes(msg.file_size) : ''}
                     </span>
@@ -181,6 +189,9 @@ export default function ChatPanel({ sessionId, messages, myRole, myName, isAgent
           );
         })}
         <div ref={messagesEndRef} />
+        {preview && (
+          <FilePreview fileUrl={preview.url} fileType={preview.type} onClose={() => setPreview(null)} />
+        )}
       </div>
 
       {/* Input area */}

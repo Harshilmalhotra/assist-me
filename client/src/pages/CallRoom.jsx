@@ -8,7 +8,10 @@ import ChatPanel from '../components/ChatPanel';
 import CallControls from '../components/CallControls';
 import AnnotationCanvas from '../components/AnnotationCanvas';
 import IntelligenceCard from '../components/IntelligenceCard';
+import ParticipantList from '../components/ParticipantList';
 import api from '../api';
+import { useContext } from 'react';
+import { ThemeContext } from '../theme/ThemeContext';
 
 export default function CallRoom() {
   const { sessionId } = useParams();
@@ -36,6 +39,8 @@ export default function CallRoom() {
   // State
   const [status, setStatus] = useState('connecting'); // connecting | active | ended | error
   const [remoteParticipant, setRemoteParticipant] = useState(null);
+  const [participants, setParticipants] = useState([]); // includes local and remote
+  const [pinned, setPinned] = useState(null);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   
@@ -262,16 +267,28 @@ export default function CallRoom() {
         });
 
         // 12. Listen for participant events
-        socket.on('participant-joined', ({ role: remoteRole, name }) => {
-          setRemoteParticipant({ role: remoteRole, name });
+        socket.on('participant-joined', ({ socketId, role: remoteRole, name }) => {
+          setRemoteParticipant({ role: remoteRole, name, socketId });
+          setParticipants(prev => {
+            const exists = prev.find(p => p.socketId === socketId);
+            if (exists) return prev;
+            return [...prev, { socketId, role: remoteRole, name }];
+          });
         });
 
-        socket.on('participant-left', () => {
+        socket.on('participant-left', ({ socketId }) => {
           setRemoteParticipant(null);
           setRemoteStream(null);
           setRemoteScreenStream(null);
           setRemoteVideoOff(false);
+          setParticipants(prev => prev.filter(p => p.socketId !== socketId));
         });
+
+          // Incoming mute request (peer asked us to mute)
+          socket.on('mute-request', () => {
+            // If not muted, mute ourselves
+            if (!audioMuted) toggleMute();
+          });
 
         // 13. Chat
         socket.on('new-message', (message) => {
@@ -424,6 +441,17 @@ export default function CallRoom() {
         resolve(response);
       });
     });
+  }
+
+  function handlePinParticipant(p) {
+    setPinned(p.socketId || null);
+    // Spotlight logic: if pinned is remote, ensure their video is emphasized. (Simple client-side flag)
+  }
+
+  function handleRequestMute(p) {
+    if (!p || !p.socketId) return;
+    const socket = getSocket();
+    socket?.emit('request-mute', { sessionId, targetSocketId: p.socketId });
   }
 
   async function toggleMute() {
@@ -717,6 +745,10 @@ export default function CallRoom() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#0a0a0a', overflow: 'hidden', position: 'relative' }}>
+    {/* Participants floating list */}
+    <ParticipantList participants={[{ socketId: 'local', name: myName, role }, ...(participants || [])]} pinnedId={pinned} onPin={handlePinParticipant} onRequestMute={handleRequestMute} localSocketId={'local'} />
+      {/* Theme toggle */}
+      <ThemeToggle />
       {/* Video area */}
       <div style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
         
@@ -1035,6 +1067,24 @@ export default function CallRoom() {
         </div>
       )}
     </div>
+  );
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useContext(ThemeContext);
+  return (
+    <button
+      onClick={toggle}
+      aria-label="Toggle theme"
+      title={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+      style={{
+        position: 'absolute', top: 14, right: 14, zIndex: 60,
+        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)',
+        color: '#fff', padding: '8px 10px', borderRadius: 10, cursor: 'pointer'
+      }}
+    >
+      {theme === 'light' ? '🌙' : '☀️'}
+    </button>
   );
 }
 

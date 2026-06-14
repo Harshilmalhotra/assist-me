@@ -22,9 +22,34 @@ export default function CallControls({
 }) {
   const iconSize = isMobile ? 14 : 20;
 
+  // Keyboard shortcuts
+  function onKeyDown(e) {
+    // Space toggles mute
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      onToggleMute?.();
+    }
+    if (e.key.toLowerCase() === 'v') {
+      onToggleVideo?.();
+    }
+    if (e.key.toLowerCase() === 'r') {
+      onToggleRecording?.();
+    }
+    if (e.key.toLowerCase() === 'a') {
+      onToggleAnnotation?.();
+    }
+    if (e.key.toLowerCase() === 'c') {
+      onToggleChat?.();
+    }
+  }
+
   return (
     <div 
       className="glass-panel animate-fade-in"
+      role="toolbar"
+      aria-label="Call controls"
+      tabIndex={0}
+      onKeyDown={onKeyDown}
       style={{
         position: 'absolute',
         bottom: '20px',
@@ -45,6 +70,8 @@ export default function CallControls({
         className="btn-interactive"
         style={buttonStyle(audioMuted, false, false, isMobile)}
         title={audioMuted ? 'Unmute Audio' : 'Mute Audio'}
+        aria-pressed={!!audioMuted}
+        aria-label={audioMuted ? 'Unmute audio' : 'Mute audio'}
       >
         {audioMuted ? <MicOff size={iconSize} color="#ef4444" /> : <Mic size={iconSize} />}
       </button>
@@ -80,6 +107,8 @@ export default function CallControls({
           position: 'relative',
         }}
         title={chatOpen ? 'Hide Chat' : 'Show Chat'}
+        aria-pressed={!!chatOpen}
+        aria-label={chatOpen ? 'Hide chat panel' : 'Open chat panel'}
       >
         <MessageSquare size={iconSize} color={chatOpen ? '#22c55e' : '#fff'} />
         {unreadChatCount > 0 && (
@@ -111,6 +140,8 @@ export default function CallControls({
           className="btn-interactive"
           style={buttonStyle(isRecording, true, false, isMobile)}
           title={isRecording ? 'Stop Recording' : 'Start Recording'}
+          aria-pressed={!!isRecording}
+          aria-label={isRecording ? 'Stop recording' : 'Start recording'}
         >
           <Circle size={iconSize} fill={isRecording ? '#ef4444' : 'none'} color={isRecording ? '#ef4444' : '#fff'} />
         </button>
@@ -123,6 +154,8 @@ export default function CallControls({
           className="btn-interactive"
           style={buttonStyle(annotationActive, false, false, isMobile)}
           title={annotationActive ? 'Disable Annotations' : 'Enable Annotations'}
+          aria-pressed={!!annotationActive}
+          aria-label={annotationActive ? 'Disable annotations' : 'Enable annotations'}
         >
           <PenTool size={iconSize} color={annotationActive ? '#22c55e' : '#fff'} />
         </button>
@@ -136,6 +169,7 @@ export default function CallControls({
         className="btn-interactive"
         style={endButtonStyle(isMobile)}
         title={showRecording ? 'End Call Session' : 'Exit Call'}
+        aria-label={showRecording ? 'End call for all participants' : 'Leave call'}
       >
         <PhoneOff size={iconSize} />
       </button>

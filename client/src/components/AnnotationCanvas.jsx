@@ -8,6 +8,8 @@ export default function AnnotationCanvas({ active, sessionId }) {
   const contextRef = useRef(null);
   const [color, setColor] = useState('#ff3b30');
   const [lineWidth, setLineWidth] = useState(3);
+  const [history, setHistory] = useState([]); // array of paths
+  const [redoStack, setRedoStack] = useState([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -34,6 +36,8 @@ export default function AnnotationCanvas({ active, sessionId }) {
       ctx.moveTo(drawData.fromX, drawData.fromY);
       ctx.lineTo(drawData.toX, drawData.toY);
       ctx.stroke();
+      // add to history
+      setHistory(h => [...h, { from: { x: drawData.fromX, y: drawData.fromY }, to: { x: drawData.toX, y: drawData.toY }, color: drawData.color, lineWidth: drawData.lineWidth }]);
     }
 
     function onClear() {
@@ -44,6 +48,7 @@ export default function AnnotationCanvas({ active, sessionId }) {
 
     socket.on('annotation-draw', onRemoteDraw);
     socket.on('annotation-clear', onClear);
+    socket.on('annotation-undo', onClearLast);
 
     return () => {
       socket.off('annotation-draw', onRemoteDraw);
@@ -91,6 +96,9 @@ export default function AnnotationCanvas({ active, sessionId }) {
       },
     });
 
+    // push to local history
+    setHistory(h => [...h, { from: { x: lastPoint.x, y: lastPoint.y }, to: { x: currentPoint.x, y: currentPoint.y }, color, lineWidth }]);
+
     lastPointRef.current = currentPoint;
   }
 
@@ -103,6 +111,73 @@ export default function AnnotationCanvas({ active, sessionId }) {
     const ctx = contextRef.current;
     if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     getSocket()?.emit('annotation-clear', { sessionId });
+    setHistory([]);
+    setRedoStack([]);
+  }
+
+  function redrawFromHistory(h) {
+    const ctx = contextRef.current;
+    if (!ctx) return;
+    const canvas = canvasRef.current;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    h.forEach(seg => {
+      ctx.strokeStyle = seg.color;
+      ctx.lineWidth = seg.lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(seg.from.x, seg.from.y);
+      ctx.lineTo(seg.to.x, seg.to.y);
+      ctx.stroke();
+    });
+  }
+
+  function undoLast() {
+    setHistory(h => {
+      if (h.length === 0) return h;
+      const copy = [...h];
+      const last = copy.pop();
+      setRedoStack(r => [...r, last]);
+      const socket = getSocket();
+      socket?.emit('annotation-undo', { sessionId });
+      // redraw
+      setTimeout(() => redrawFromHistory(copy), 0);
+      return copy;
+    });
+  }
+
+  function redo() {
+    setRedoStack(r => {
+      if (r.length === 0) return r;
+      const copy = [...r];
+      const next = copy.pop();
+      setHistory(h => {
+        const nh = [...h, next];
+        // draw
+        const ctx = contextRef.current;
+        if (ctx) {
+          ctx.strokeStyle = next.color;
+          ctx.lineWidth = next.lineWidth;
+          ctx.beginPath();
+          ctx.moveTo(next.from.x, next.from.y);
+          ctx.lineTo(next.to.x, next.to.y);
+          ctx.stroke();
+        }
+        // notify peers
+        getSocket()?.emit('annotation-draw', { sessionId, drawData: { fromX: next.from.x, fromY: next.from.y, toX: next.to.x, toY: next.to.y, color: next.color, lineWidth: next.lineWidth } });
+        return nh;
+      });
+      return copy;
+    });
+  }
+
+  function onClearLast() {
+    // remote undo — remove last history entry and redraw
+    setHistory(h => {
+      if (h.length === 0) return h;
+      const copy = [...h];
+      copy.pop();
+      setTimeout(() => redrawFromHistory(copy), 0);
+      return copy;
+    });
   }
 
   return (

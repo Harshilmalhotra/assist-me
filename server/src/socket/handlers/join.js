@@ -94,4 +94,10 @@ module.exports = function handleJoin(io, socket) {
       }
     }, config.reconnectGraceSeconds * 1000);
   });
+
+  // Relay mute requests between participants (client requests server to ask another participant to mute)
+  socket.on('request-mute', ({ sessionId, targetSocketId }) => {
+    if (!targetSocketId) return;
+    io.to(targetSocketId).emit('mute-request', { from: socket.id });
+  });
 };

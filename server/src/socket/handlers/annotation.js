@@ -10,4 +10,8 @@ module.exports = function handleAnnotation(io, socket) {
   socket.on('annotation-clear', ({ sessionId }) => {
     socket.to(`session:${sessionId}`).emit('annotation-clear');
   });
+
+  socket.on('annotation-undo', ({ sessionId }) => {
+    socket.to(`session:${sessionId}`).emit('annotation-undo');
+  });
 };

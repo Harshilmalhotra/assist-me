@@ -61,6 +61,27 @@
   --transition-base: 180ms ease;
 }
 
+/* Dark theme overrides */
+:root[data-theme="dark"], [data-theme="dark"] {
+  --color-background: #0b1220;
+  --color-surface: #0f1724;
+  --color-surface-raised: #0b1220;
+  --color-border: rgba(255,255,255,0.06);
+  --color-border-strong: rgba(255,255,255,0.08);
+
+  --color-text-primary: #E6EEF8;
+  --color-text-secondary: #AAB9CC;
+  --color-text-muted: #8093A7;
+
+  --color-accent: #2563EB;
+  --color-accent-hover: #1D4ED8;
+  --color-accent-text: #FFFFFF;
+
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger: #F97373;
+}
+
 html, body, #root {
   height: 100%;
   font-family: var(--font-sans);
