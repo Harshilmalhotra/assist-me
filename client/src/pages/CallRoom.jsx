@@ -127,7 +127,7 @@ export default function CallRoom() {
 
         // 3. Join session room
         const joinResult = await emitWithAck(socket, 'join-session', { sessionId });
-        if (joinResult.error) throw new Error(joinResult.error);
+        if (!joinResult || joinResult.error) throw new Error(joinResult?.error || 'Failed to join session');
 
         // 4. Get local media
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -138,7 +138,7 @@ export default function CallRoom() {
 
         // 5. Initialize mediasoup Device
         const rtpCapsResult = await emitWithAck(socket, 'get-rtp-capabilities', { sessionId });
-        if (rtpCapsResult.error) throw new Error(rtpCapsResult.error);
+        if (!rtpCapsResult || rtpCapsResult.error) throw new Error(rtpCapsResult?.error || 'Failed to get RTP capabilities');
 
         const device = new Device();
         await device.load({ routerRtpCapabilities: rtpCapsResult.rtpCapabilities });
@@ -146,6 +146,7 @@ export default function CallRoom() {
 
         // 6. Create send transport
         const sendTransportParams = await emitWithAck(socket, 'create-send-transport', { sessionId });
+        if (!sendTransportParams || sendTransportParams.error) throw new Error(sendTransportParams?.error || 'Failed to create send transport');
         const sendTransport = device.createSendTransport(sendTransportParams.params);
         sendTransportRef.current = sendTransport;
 
@@ -169,6 +170,7 @@ export default function CallRoom() {
 
         // 7. Create recv transport
         const recvTransportParams = await emitWithAck(socket, 'create-recv-transport', { sessionId });
+        if (!recvTransportParams || recvTransportParams.error) throw new Error(recvTransportParams?.error || 'Failed to create recv transport');
         const recvTransport = device.createRecvTransport(recvTransportParams.params);
         recvTransportRef.current = recvTransport;
 
@@ -213,15 +215,17 @@ export default function CallRoom() {
 
         // 9. Consume existing producers (excluding our own local producers)
         const existingProducers = await emitWithAck(socket, 'get-producers', { sessionId });
-        for (const { producerId, kind, appData, paused } of existingProducers.producers) {
-          if (
-            producerId === producersRef.current.audio?.id ||
-            producerId === producersRef.current.video?.id ||
-            producerId === screenProducerRef.current?.id
-          ) {
-            continue;
+        if (existingProducers && existingProducers.producers && Array.isArray(existingProducers.producers)) {
+          for (const { producerId, kind, appData, paused } of existingProducers.producers) {
+            if (
+              producerId === producersRef.current.audio?.id ||
+              producerId === producersRef.current.video?.id ||
+              producerId === screenProducerRef.current?.id
+            ) {
+              continue;
+            }
+            await consumeTrack(socket, producerId, kind, appData, paused);
           }
-          await consumeTrack(socket, producerId, kind, appData, paused);
         }
 
         // 10. Listen for new producers
@@ -372,13 +376,16 @@ export default function CallRoom() {
           rtpCapabilities: device.rtpCapabilities,
         });
 
-        if (result.error) return;
+        if (!result || result.error) {
+          console.warn(`Failed to consume track ${producerId}:`, result?.error || 'no result');
+          return;
+        }
 
         const consumer = await recvTransport.consume({
-          id: result.id,
-          producerId: result.producerId,
-          kind: result.kind,
-          rtpParameters: result.rtpParameters,
+          id: result?.id,
+          producerId: result?.producerId,
+          kind: result?.kind,
+          rtpParameters: result?.rtpParameters,
         });
 
         // Track active consumers
@@ -590,7 +597,7 @@ export default function CallRoom() {
       console.log('Recording status: Attempting to start');
       const socket = getSocket();
       const result = await emitWithAck(socket, 'start-recording', { sessionId });
-      if (result.error) {
+      if (!result || result.error) {
         console.error('Recording error:', result.error);
         alert(`Failed to start recording: ${result.error}`);
         return;
@@ -720,7 +727,7 @@ export default function CallRoom() {
       }
 
       const result = await emitWithAck(socket, 'stop-recording', { sessionId, recordingId });
-      if (result && result.error) {
+      if (result?.error) {
         console.error('Recording error:', result.error);
       } else {
         console.log('Recording status: Stopped successfully');
