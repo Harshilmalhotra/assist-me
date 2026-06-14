@@ -1,5 +1,7 @@
 # Real-Time Video Support Platform
 
+**Tutorial video:** ▶️  [Watch the quick walkthrough](https://youtu.be/1uJEPdNha_w)
+
 This repository contains a self-hosted, browser-based customer support video platform built with React, Node.js, mediasoup, PostgreSQL, Redis, and Google Gemini integration.
 
 ## Key Features

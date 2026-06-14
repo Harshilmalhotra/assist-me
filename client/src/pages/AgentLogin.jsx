@@ -75,23 +75,53 @@ export default function AgentLogin() {
           boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
         }}
       >
-        <span style={{
-          fontSize: '11px',
-          fontWeight: 600,
-          color: 'var(--color-accent)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          display: 'block',
-          marginBottom: 'var(--space-1)'
-        }}>
-          Internal Portal
-        </span>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: 'var(--space-1)', color: 'var(--color-text-primary)' }}>
-          Support Console
-        </h1>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: 'var(--space-4)' }}>
-          Sign in to your agent or admin console
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-2)' }}>
+          <div>
+            <span style={{
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'var(--color-accent)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              display: 'block',
+              marginBottom: 'var(--space-1)'
+            }}>
+              Internal Portal
+            </span>
+            <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: 'var(--space-1)', color: 'var(--color-text-primary)' }}>
+              Support Console
+            </h1>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: 'var(--space-4)' }}>
+              Sign in to your agent or admin console
+            </p>
+          </div>
+
+          <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'center' }}>
+            <a
+              href="https://youtu.be/1uJEPdNha_w"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Watch walkthrough video"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '8px 10px',
+                borderRadius: '10px',
+                background: 'rgba(0,0,0,0.05)',
+                color: 'var(--color-text-primary)',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 600,
+                border: '1px solid rgba(0,0,0,0.04)'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px' }}>
+                <path d="M5 3v18l15-9L5 3z" fill="currentColor" />
+              </svg>
+              Watch tutorial
+            </a>
+          </div>
+        </div>
 
         <div style={{
           padding: '18px 16px',
