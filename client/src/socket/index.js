@@ -19,7 +19,23 @@ export function connectSocket({ token, inviteToken, customerName }) {
   });
 
   socket.on('connect_error', (err) => {
-    console.error('Socket connection error:', err.message);
+    // Log full error object for diagnostics (message, stack, and any extra fields)
+    try {
+      console.error('Socket connection error:', err);
+      console.error('connect_error details:', {
+        message: err && err.message,
+        name: err && err.name,
+        stack: err && err.stack,
+        toString: err && err.toString && err.toString(),
+        data: err && err.data,
+      });
+    } catch (logErr) {
+      console.error('Failed to stringify connect_error', logErr, err);
+    }
+  });
+
+  socket.on('error', (err) => {
+    console.error('Socket error event:', err);
   });
 
   return socket;

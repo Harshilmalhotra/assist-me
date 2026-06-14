@@ -326,11 +326,35 @@ export default function CallRoom() {
         setStatus('active');
       } catch (err) {
         console.error('Call init error:', err);
-        if (err.message === 'Session has ended') {
-          setErrorMessage('Call has ended, contact Support to generate a new link');
-        } else {
-          setErrorMessage('Failed to establish connection. Check your internet or invite link permissions.');
-        }
+          // Provide clearer, actionable messages for common socket/auth failures
+          // Also log the full error object for exact diagnostics
+          try {
+            console.error('Call init error (detailed):', err, {
+              message: err && err.message,
+              name: err && err.name,
+              stack: err && err.stack,
+              code: err && err.code,
+              toString: err && err.toString && err.toString(),
+            });
+          } catch (logErr) {
+            console.error('Error logging failed:', logErr, err);
+          }
+
+          const msg = (err && (err.message || err.error)) ? (err.message || err.error) : String(err);
+          if (msg === 'Session has ended') {
+            setErrorMessage('Call has ended, contact Support to generate a new link');
+          } else if (msg === 'INVALID_TOKEN') {
+            setErrorMessage('Authentication failed: agent token is invalid or expired. Please log in again.');
+          } else if (msg === 'INVALID_INVITE') {
+            setErrorMessage('Invite token is invalid. Ensure the invite link is correct.');
+          } else if (msg === 'NO_AUTH') {
+            setErrorMessage('No authentication provided. Agents must be logged in or customers must use a valid invite link.');
+          } else if (msg === 'ECONNREFUSED' || (typeof msg === 'string' && msg.includes('connect'))) {
+            setErrorMessage('Unable to reach signaling server. Check network or server status.');
+          } else {
+            // Fallback: show server-provided message or a generic hint
+            setErrorMessage(msg || 'Failed to establish connection. Check your internet or invite link permissions.');
+          }
         setStatus('error');
       }
     }
