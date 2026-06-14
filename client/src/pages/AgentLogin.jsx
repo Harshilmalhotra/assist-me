@@ -33,6 +33,28 @@ export default function AgentLogin() {
     }
   }
 
+  async function handleQuickLogin(role) {
+    const credentials = role === 'admin'
+      ? { email: 'admin@example.com', password: 'admin123' }
+      : { email: 'agent@example.com', password: 'agent123' };
+
+    setEmail(credentials.email);
+    setPassword(credentials.password);
+    setError('');
+    setLoading(true);
+
+    try {
+      const { data } = await api.post('/auth/login', credentials);
+      localStorage.setItem('agent_token', data.token);
+      localStorage.setItem('agent_user', JSON.stringify(data.agent));
+      navigate(data.agent.role === 'admin' ? '/admin' : '/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -79,15 +101,45 @@ export default function AgentLogin() {
           marginBottom: 'var(--space-6)'
         }}>
           <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '10px', color: '#0f172a' }}>
-            Admin portal login
+            Quick login
           </div>
-          <div style={{ display: 'grid', gap: '8px', fontSize: '13px', color: 'var(--color-text-primary)' }}>
-            <div>
-              <strong>Admin:</strong> admin@example.com / admin123
-            </div>
-            <div>
-              <strong>Agent:</strong> agent@example.com / agent123
-            </div>
+          <div style={{ display: 'grid', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('admin')}
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid rgba(15, 23, 42, 0.08)',
+                background: 'var(--color-background)',
+                color: 'var(--color-text-primary)',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Login as Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('agent')}
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid rgba(15, 23, 42, 0.08)',
+                background: 'var(--color-background)',
+                color: 'var(--color-text-primary)',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Login as Agent
+            </button>
           </div>
         </div>
 
