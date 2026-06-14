@@ -94,6 +94,6 @@ CREATE INDEX IF NOT EXISTS idx_recordings_session_id ON recordings(session_id);
 
 -- Seed default accounts (bcrypt hash of 'admin123' and 'agent123')
 INSERT INTO agents (email, name, password_hash, role) VALUES
-  ('admin@example.com', 'Admin User', '$2b$12$R.S916B2L1vC4.5iQ/2HKeS6gP16m3Fw4E/YyA7y0H82T9iP189wG', 'admin'),
-  ('agent@example.com', 'Support Agent', '$2b$12$R.S916B2L1vC4.5iQ/2HKeS6gP16m3Fw4E/YyA7y0H82T9iP189wG', 'agent')
+  ('admin@example.com', 'Admin User', '$2b$12$iUMiXWKwpqnCU.8IuFLYk.NyFnWAb86H/pcxBAxK0qs10ZDMjhi/y', 'admin'),
+  ('agent@example.com', 'Support Agent', '$2b$12$iUMiXWKwpqnCU.8IuFLYk.NyFnWAb86H/pcxBAxK0qs10ZDMjhi/y', 'agent')
 ON CONFLICT (email) DO NOTHING;
